@@ -1,82 +1,177 @@
 import { useState } from "react";
 import {
+  KeyboardAvoidingView,
   StyleSheet,
   Text,
   TextInput,
+  ToastAndroid,
   TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+interface ReportData {
+  // Same interface as before
+  todaysDate: string;
+  totalGrossIncome: string;
+  calculatedNetIncome: string;
+  empSalary: string;
+  expense: string;
+  month: string;
+}
 
 export default function Index() {
-  const [expense, setExpense] = useState<string>("0");
-  const [grossIncomeCash, setGrossIncomeCash] = useState<string>("0");
-  const [grossIncomeDigital, setGrossIncomeDigital] = useState<string>("0");
-  const [netIncome, setNetIncome] = useState<string>("0");
-  const [totalGrossIncome, setTotalGrossIncome] = useState<string>("0");
+  const [expense, setExpense] = useState<string>("");
+  const [grossIncomeCash, setGrossIncomeCash] = useState<string>("");
+  const [grossIncomeDigital, setGrossIncomeDigital] = useState<string>("");
+  const [netIncome, setNetIncome] = useState<string>("");
+  const [totalGrossIncome, setTotalGrossIncome] = useState<string>("");
+  const [empSalary, setEmpSalary] = useState<string>("");
+  const router = useRouter();
 
   const todaysDate = new Date().toDateString().slice(4);
 
-  const handleSubmit = () => {
+  const calculate = async () => {
     const parsedExpense = parseFloat(expense) || 0;
+
     const parsedGrossIncomeCash = parseFloat(grossIncomeCash) || 0;
+
     const parsedGrossIncomeDigital = parseFloat(grossIncomeDigital) || 0;
 
-    const totalGross = parsedGrossIncomeCash + parsedGrossIncomeDigital;
-    setTotalGrossIncome(totalGross.toString());
+    const pardedEmpSalary = parseFloat(empSalary) || 0;
 
-    const calculatedNetIncome = totalGross - parsedExpense;
+    const totalGross = parsedGrossIncomeCash + parsedGrossIncomeDigital;
+    const parsedToalGross = totalGross.toString();
+
+    const calculatedNetIncome = totalGross - parsedExpense - pardedEmpSalary;
+
+    const stringCalculatedNetIncome = calculatedNetIncome.toString();
+
+    setTotalGrossIncome(parsedToalGross);
     setNetIncome(calculatedNetIncome.toString());
+
+    const month = todaysDate.slice(0, 3) + " " + todaysDate.slice(7, 11);
+
+    return {
+      todaysDate,
+      totalGrossIncome: totalGross.toString(),
+      calculatedNetIncome: stringCalculatedNetIncome,
+      empSalary,
+      expense,
+      month,
+    };
+  };
+
+  const updateReportData = async (newData: ReportData) => {
+    try {
+      const month = todaysDate.slice(0, 3) + " " + todaysDate.slice(7, 11);
+      const storedData = await AsyncStorage.getItem(month);
+      const existingData: ReportData[] = storedData
+        ? JSON.parse(storedData)
+        : [];
+
+      // Check if an entry for this date already exists
+      const existingEntryIndex = existingData.findIndex(
+        (item) => item.todaysDate === newData.todaysDate
+      );
+
+      if (existingEntryIndex !== -1) {
+        // Update the existing entry
+        existingData[existingEntryIndex] = newData;
+      } else {
+        existingData.push(newData);
+      }
+
+      await AsyncStorage.setItem(month, JSON.stringify(existingData));
+    } catch (error) {
+      ToastAndroid.show("Error saving data", ToastAndroid.SHORT);
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!expense || !grossIncomeCash || !grossIncomeDigital || !empSalary) {
+      ToastAndroid.show("Please fill all the fields", ToastAndroid.SHORT);
+      return;
+    }
+
+    try {
+      const details = await calculate();
+      await updateReportData(details);
+      ToastAndroid.show("Data inserted successfully", ToastAndroid.LONG);
+    } catch (error) {
+      ToastAndroid.show("Error inserting data", ToastAndroid.SHORT);
+    }
   };
 
   return (
     <SafeAreaView>
-      <View style={styles.container}>
-        <View style={styles.titlecontainer}>
-          <Text style={styles.title}> Date : {todaysDate}</Text>
-        </View>
+      <KeyboardAvoidingView behavior="position">
+        <View style={styles.container}>
+          <View style={styles.titlecontainer}>
+            <Text style={styles.title}> Date : {todaysDate}</Text>
+          </View>
 
-        <View style={styles.resultcontainer}>
-          <Text style={styles.text}> Total Gross Income</Text>
-          <Text style={styles.text}> Total Net Income</Text>
-        </View>
-        <View style={styles.results}>
-          <Text style={{ fontSize: 20 }}>{totalGrossIncome}</Text>
-          <Text style={{ fontSize: 20 }}>{netIncome}</Text>
-        </View>
+          <View style={styles.resultcontainer}>
+            <Text style={styles.text}> Total Gross Income</Text>
+            <Text style={styles.text}> Total Net Income</Text>
+          </View>
+          <View style={styles.results}>
+            <Text style={{ fontSize: 20 }}>{totalGrossIncome}</Text>
+            <Text style={{ fontSize: 20 }}>{netIncome}</Text>
+          </View>
 
-        <View style={styles.inputcontainer}>
-          <Text style={styles.text}> Total Expense</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="0"
-            keyboardType="decimal-pad"
-            onChangeText={setExpense} // Update state on text change
-          />
-          <Text style={styles.text}>Gross income (cash)</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="0"
-            keyboardType="decimal-pad"
-            onChangeText={setGrossIncomeCash}
-          />
-          <Text style={styles.text}>Gross income (Digital)</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="0"
-            keyboardType="decimal-pad"
-            onChangeText={setGrossIncomeDigital}
-          />
+          <View style={styles.inputcontainer}>
+            <Text style={styles.text}> Total Expense</Text>
+            <TextInput
+              style={styles.input}
+              value={expense}
+              placeholder="0"
+              keyboardType="decimal-pad"
+              onChangeText={setExpense} // Update state on text change
+            />
+            <Text style={styles.text}>Gross income (cash)</Text>
+            <TextInput
+              value={grossIncomeCash}
+              style={styles.input}
+              placeholder="0"
+              keyboardType="decimal-pad"
+              onChangeText={setGrossIncomeCash}
+            />
+            <Text style={styles.text}>Gross income (Digital)</Text>
+            <TextInput
+              value={grossIncomeDigital}
+              style={styles.input}
+              placeholder="0"
+              keyboardType="decimal-pad"
+              onChangeText={setGrossIncomeDigital}
+            />
+
+            <Text style={styles.text}> Employee Salary</Text>
+            <TextInput
+              value={empSalary}
+              style={styles.input}
+              placeholder="0"
+              keyboardType="decimal-pad"
+              onChangeText={setEmpSalary} // Update state on text change
+            />
+          </View>
+
+          <TouchableOpacity style={styles.button} onPress={handleSubmit}>
+            <Text style={styles.text}>Insert</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => {
+              router.push("./report");
+            }}
+          >
+            <Text style={styles.text}>Montly Report</Text>
+          </TouchableOpacity>
         </View>
-
-        <TouchableOpacity style={styles.button} onPress={handleSubmit}>
-          <Text style={styles.text}>Submit</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.button}>
-          <Text style={styles.text}>Montly Report</Text>
-        </TouchableOpacity>
-      </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -115,12 +210,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#D4D4D4",
     width: 320,
-    height: 350,
+    height: 400,
     borderRadius: 10,
     elevation: 10,
     gap: 5,
     justifyContent: "center",
-    marginTop: 50,
+    marginTop: 30,
   },
   input: {
     margin: 10,
@@ -130,14 +225,15 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   button: {
-    marginTop: 30,
+    marginTop: 20,
     backgroundColor: "#D4D4D4",
     padding: 10,
-    width: 200,
+    width: 310,
     justifyContent: "center",
     alignItems: "center",
     borderRadius: 10,
     elevation: 10,
+    flexDirection: "row",
   },
   titlecontainer: {
     width: "100%",
@@ -156,7 +252,7 @@ const styles = StyleSheet.create({
 
   text: {
     textAlign: "center",
-    fontSize: 20,
+    fontSize: 19,
     fontWeight: "bold",
   },
 });
