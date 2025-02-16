@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -26,8 +26,8 @@ export default function Index() {
   const [expense, setExpense] = useState<string>("");
   const [grossIncomeCash, setGrossIncomeCash] = useState<string>("");
   const [grossIncomeDigital, setGrossIncomeDigital] = useState<string>("");
-  const [netIncome, setNetIncome] = useState<string>("");
-  const [totalGrossIncome, setTotalGrossIncome] = useState<string>("");
+  const [netIncome, setNetIncome] = useState<string>("0");
+  const [totalGrossIncome, setTotalGrossIncome] = useState<string>("0");
   const [empSalary, setEmpSalary] = useState<string>("");
   const router = useRouter();
 
@@ -54,6 +54,8 @@ export default function Index() {
 
     const month = todaysDate.slice(0, 3) + " " + todaysDate.slice(7, 11);
 
+    const time = new Date().toString();
+
     return {
       todaysDate,
       totalGrossIncome: totalGross.toString(),
@@ -61,6 +63,7 @@ export default function Index() {
       empSalary,
       expense,
       month,
+      time,
     };
   };
 
@@ -106,73 +109,67 @@ export default function Index() {
   };
 
   return (
-    <SafeAreaView>
-      <KeyboardAvoidingView behavior="position">
-        <View style={styles.container}>
-          <View style={styles.titlecontainer}>
-            <Text style={styles.title}> Date : {todaysDate}</Text>
-          </View>
-
-          <View style={styles.resultcontainer}>
-            <Text style={styles.text}> Total Gross Income</Text>
-            <Text style={styles.text}> Total Net Income</Text>
-          </View>
-          <View style={styles.results}>
-            <Text style={{ fontSize: 20 }}>{totalGrossIncome}</Text>
-            <Text style={{ fontSize: 20 }}>{netIncome}</Text>
-          </View>
-
-          <View style={styles.inputcontainer}>
-            <Text style={styles.text}> Total Expense</Text>
-            <TextInput
-              style={styles.input}
-              value={expense}
-              placeholder="0"
-              keyboardType="decimal-pad"
-              onChangeText={setExpense} // Update state on text change
-            />
-            <Text style={styles.text}>Gross income (cash)</Text>
-            <TextInput
-              value={grossIncomeCash}
-              style={styles.input}
-              placeholder="0"
-              keyboardType="decimal-pad"
-              onChangeText={setGrossIncomeCash}
-            />
-            <Text style={styles.text}>Gross income (Digital)</Text>
-            <TextInput
-              value={grossIncomeDigital}
-              style={styles.input}
-              placeholder="0"
-              keyboardType="decimal-pad"
-              onChangeText={setGrossIncomeDigital}
-            />
-
-            <Text style={styles.text}> Employee Salary</Text>
-            <TextInput
-              value={empSalary}
-              style={styles.input}
-              placeholder="0"
-              keyboardType="decimal-pad"
-              onChangeText={setEmpSalary} // Update state on text change
-            />
-          </View>
-
-          <TouchableOpacity style={styles.button} onPress={handleSubmit}>
-            <Text style={styles.text}>Insert</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.button}
-            onPress={() => {
-              router.push("./report");
-            }}
-          >
-            <Text style={styles.text}>Montly Report</Text>
-          </TouchableOpacity>
+    <KeyboardAvoidingView behavior="position">
+      <View style={styles.container}>
+        <View style={styles.resultcontainer}>
+          <Text style={styles.text}> Total Gross Income</Text>
+          <Text style={styles.text}> Total Net Income</Text>
         </View>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+        <View style={styles.results}>
+          <Text style={{ fontSize: 20 }}>{totalGrossIncome}</Text>
+          <Text style={{ fontSize: 20 }}>{netIncome}</Text>
+        </View>
+
+        <View style={styles.inputcontainer}>
+          <Text style={styles.text}> Total Expense</Text>
+          <TextInput
+            style={styles.input}
+            value={expense}
+            placeholder="0"
+            keyboardType="decimal-pad"
+            onChangeText={setExpense} // Update state on text change
+          />
+          <Text style={styles.text}>Gross income (cash)</Text>
+          <TextInput
+            value={grossIncomeCash}
+            style={styles.input}
+            placeholder="0"
+            keyboardType="decimal-pad"
+            onChangeText={setGrossIncomeCash}
+          />
+          <Text style={styles.text}>Gross income (Digital)</Text>
+          <TextInput
+            value={grossIncomeDigital}
+            style={styles.input}
+            placeholder="0"
+            keyboardType="decimal-pad"
+            onChangeText={setGrossIncomeDigital}
+          />
+
+          <Text style={styles.text}> Employee Salary</Text>
+          <TextInput
+            value={empSalary}
+            style={styles.input}
+            placeholder="0"
+            keyboardType="decimal-pad"
+            onChangeText={setEmpSalary}
+          />
+        </View>
+
+        <TouchableOpacity style={styles.button} onPress={handleSubmit}>
+          <Text style={styles.text}>Insert</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.button}
+          onPress={() => {
+            router.push("./report");
+          }}
+        >
+          <Text style={styles.text}>Montly Report</Text>
+        </TouchableOpacity>
+      </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -183,7 +180,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   resultcontainer: {
-    // marginTop: 10,
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#D4D4D4",
@@ -191,8 +187,6 @@ const styles = StyleSheet.create({
     height: 50,
     gap: 3,
     justifyContent: "center",
-    borderTopColor: "#222222",
-    borderTopWidth: 1,
   },
   results: {
     flexDirection: "row",
