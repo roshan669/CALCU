@@ -214,9 +214,13 @@ const styles = StyleSheet.create({
   input: {
     margin: 10,
     borderColor: "#222222",
-    borderWidth: 1,
     width: 200,
     borderRadius: 10,
+    height: 40,
+    boxSizing: "border-box",
+    padding: 8, // Adjust as needed
+    backgroundColor: "#DFDFDF", // Slightly lighter background than the parent
+    boxShadow: "inset 0 2px 5px rgba(0, 0, 0, 0.1)",
   },
   button: {
     marginTop: 20,
