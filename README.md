@@ -1,50 +1,21 @@
-# Welcome to your Expo app 👋
+# CALCU -> Small Business Financial Tracker
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+This React Native application helps small business owners easily track their monthly income and expenses. It provides a simple and intuitive interface to record daily transactions, calculate monthly totals, and generate reports. Data is stored locally using AsyncStorage, allowing for offline access.
 
-## Get started
+## Features
 
-1. Install dependencies
+- **Daily Transaction Entry:** Record income and expenses with details like date, description, and amount.
+- **Automatic Calculations:** The app automatically calculates total gross income, total expenses, and net income for the current month.
+- **Monthly Report Generation:** View a summary of income and expenses for each month.
+- **Data Persistence:** Data is stored locally using AsyncStorage, ensuring that your financial information is saved even when the app is closed.
+- **Print Report:** Generate a printable report of your monthly financials.
+- **Month Selection:** Easily navigate and view reports for different months.
+- **Data Clearing:** Option to clear financial data after a specified period (e.g., 90 days) with a backup option.
 
-   ```bash
-   npm install
-   ```
+## Technologies Used
 
-2. Start the app
-
-   ```bash
-    npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
-```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- React Native
+- Expo
+- React Native Table Component (or similar table library)
+- React Native Async Storage
+- Expo Print
