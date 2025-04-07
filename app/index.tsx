@@ -1,6 +1,8 @@
 import { useState } from "react";
 import {
   KeyboardAvoidingView,
+  Modal,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -11,6 +13,8 @@ import {
 
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Ionicons } from "@expo/vector-icons";
+import { rgbaColor } from "react-native-reanimated/lib/typescript/Colors";
 
 interface ReportData {
   // Same interface as before
@@ -29,6 +33,9 @@ export default function Index() {
   const [netIncome, setNetIncome] = useState<string>("0");
   const [totalGrossIncome, setTotalGrossIncome] = useState<string>("0");
   const [empSalary, setEmpSalary] = useState<string>("");
+  const [expList, setExpList] = useState<string[]>([]);
+  const [incList, SetIncList] = useState<string[]>([]);
+  const [showModal, setShowModal] = useState<boolean>(false);
   const router = useRouter();
 
   const todaysDate = new Date().toDateString().slice(4);
@@ -108,8 +115,11 @@ export default function Index() {
     }
   };
 
+  const handleAdd = () => {
+    setShowModal(true);
+  };
   return (
-    <KeyboardAvoidingView behavior="position">
+    <KeyboardAvoidingView behavior="position" style={{ flex: 1 }}>
       <View style={styles.container}>
         <View style={styles.resultcontainer}>
           <Text style={styles.text}> Total Gross Income</Text>
@@ -120,41 +130,45 @@ export default function Index() {
           <Text style={{ fontSize: 20 }}>{netIncome}</Text>
         </View>
 
-        <View style={styles.inputcontainer}>
-          <Text style={styles.text}> Total Expense</Text>
-          <TextInput
-            style={styles.input}
-            value={expense}
-            placeholder="0"
-            keyboardType="decimal-pad"
-            onChangeText={setExpense} // Update state on text change
-          />
-          <Text style={styles.text}>Gross income (cash)</Text>
-          <TextInput
-            value={grossIncomeCash}
-            style={styles.input}
-            placeholder="0"
-            keyboardType="decimal-pad"
-            onChangeText={setGrossIncomeCash}
-          />
-          <Text style={styles.text}>Gross income (Digital)</Text>
-          <TextInput
-            value={grossIncomeDigital}
-            style={styles.input}
-            placeholder="0"
-            keyboardType="decimal-pad"
-            onChangeText={setGrossIncomeDigital}
-          />
+        <ScrollView
+          style={styles.inputcontainer}
+          contentContainerStyle={styles.inputitems}
+        >
+          <Text></Text>
+          <TouchableOpacity onPress={handleAdd} style={styles.addrmvbtn}>
+            <Ionicons
+              name="add-circle"
+              size={50}
+              color={"rgba(0, 0, 0, 0.1)"}
+            />
+            <Text>Add expense or income</Text>
+          </TouchableOpacity>
+        </ScrollView>
 
-          <Text style={styles.text}> Employee Salary</Text>
-          <TextInput
-            value={empSalary}
-            style={styles.input}
-            placeholder="0"
-            keyboardType="decimal-pad"
-            onChangeText={setEmpSalary}
-          />
-        </View>
+        <Modal
+          style={styles.modal}
+          animationType="slide"
+          transparent={true}
+          visible={showModal}
+          onRequestClose={() => {
+            setShowModal(!showModal);
+          }}
+        >
+          <View style={styles.modalcontainer}>
+            <Text style={styles.modalname}>Name</Text>
+            <TextInput></TextInput>
+            <View style={styles.modalprefercontainer}>
+              <TouchableOpacity style={styles.modalbtn}></TouchableOpacity>
+              <TouchableOpacity style={styles.modalbtn}></TouchableOpacity>
+            </View>
+            <TouchableOpacity
+              style={styles.modaldone}
+              onPress={() => setShowModal(!showModal)}
+            >
+              <Ionicons name="checkmark" size={30} />
+            </TouchableOpacity>
+          </View>
+        </Modal>
 
         <TouchableOpacity style={styles.button} onPress={handleSubmit}>
           <Text style={styles.text}>Insert</Text>
@@ -174,6 +188,28 @@ export default function Index() {
 }
 
 const styles = StyleSheet.create({
+  modal: {},
+  modalname: {},
+  modaldone: {},
+  modalbtn: {},
+  modalprefercontainer: {},
+  modalcontainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    flexGrow: 1,
+    backgroundColor: "rgba(0,0,0,0.6)",
+  },
+  inputitems: {
+    flexDirection: "column",
+    justifyContent: "center", // Or 'center' if you want verticle centering.
+    alignItems: "center", // Center items horizontally
+    flexGrow: 1,
+  },
+  addrmvbtn: {
+    justifyContent: "center",
+    alignItems: "center",
+  },
   container: {
     flexDirection: "column",
     alignItems: "center",
@@ -200,15 +236,12 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   inputcontainer: {
-    flexDirection: "column",
-    alignItems: "center",
     backgroundColor: "#D4D4D4",
     width: 320,
     height: 400,
     borderRadius: 10,
     elevation: 10,
     gap: 5,
-    justifyContent: "center",
     marginTop: 30,
   },
   input: {
