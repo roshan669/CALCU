@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   KeyboardAvoidingView,
   Modal,
@@ -26,16 +26,21 @@ interface ReportData {
   month: string;
 }
 
+interface input {
+  name: string;
+  toggle: string;
+}
+
 export default function Index() {
-  const [expense, setExpense] = useState<string>("");
-  const [grossIncomeCash, setGrossIncomeCash] = useState<string>("");
-  const [grossIncomeDigital, setGrossIncomeDigital] = useState<string>("");
   const [netIncome, setNetIncome] = useState<string>("0");
   const [totalGrossIncome, setTotalGrossIncome] = useState<string>("0");
   const [empSalary, setEmpSalary] = useState<string>("");
   const [expList, setExpList] = useState<string[]>([]);
   const [incList, SetIncList] = useState<string[]>([]);
   const [showModal, setShowModal] = useState<boolean>(false);
+  const [perfer, setPerfer] = useState<string>("");
+  const [allinputs, setAllInputs] = useState<input[]>([]);
+  const [addName, setAddName] = useState<string>("");
   const router = useRouter();
 
   const todaysDate = new Date().toDateString().slice(4);
@@ -115,9 +120,27 @@ export default function Index() {
     }
   };
 
-  const handleAdd = () => {
-    setShowModal(true);
+  const handleAdd = async () => {
+    try {
+      const storedData = await AsyncStorage.getItem("perfer");
+      const existingData: input[] = storedData ? JSON.parse(storedData) : [];
+
+      const newData = {
+        name: addName,
+        toggle: perfer,
+      };
+      setAddName("");
+      setPerfer("");
+
+      existingData.push(newData);
+
+      await AsyncStorage.setItem("perfer", JSON.stringify(existingData));
+      setShowModal(!showModal);
+    } catch (error) {
+      ToastAndroid.show("Error saving data", ToastAndroid.SHORT);
+    }
   };
+
   return (
     <KeyboardAvoidingView behavior="position" style={{ flex: 1 }}>
       <View style={styles.container}>
@@ -135,19 +158,21 @@ export default function Index() {
           contentContainerStyle={styles.inputitems}
         >
           <Text></Text>
-          <TouchableOpacity onPress={handleAdd} style={styles.addrmvbtn}>
+          <TouchableOpacity
+            onPress={() => setShowModal(!showModal)}
+            style={styles.addrmvbtn}
+          >
             <Ionicons
               name="add-circle"
               size={50}
               color={"rgba(0, 0, 0, 0.1)"}
             />
-            <Text>Add expense or income</Text>
+            {<Text>Add expense or income</Text>}
           </TouchableOpacity>
         </ScrollView>
 
         <Modal
-          style={styles.modal}
-          animationType="slide"
+          animationType="fade"
           transparent={true}
           visible={showModal}
           onRequestClose={() => {
@@ -155,18 +180,51 @@ export default function Index() {
           }}
         >
           <View style={styles.modalcontainer}>
-            <Text style={styles.modalname}>Name</Text>
-            <TextInput></TextInput>
-            <View style={styles.modalprefercontainer}>
-              <TouchableOpacity style={styles.modalbtn}></TouchableOpacity>
-              <TouchableOpacity style={styles.modalbtn}></TouchableOpacity>
+            <View style={styles.modalcontent}>
+              <Text style={styles.modalname}>Add Expense or Income</Text>
+              <TextInput
+                onChangeText={(t) => {
+                  setAddName(t);
+                }}
+                style={styles.input}
+              />
+
+              <View style={styles.modalprefercontainer}>
+                <TouchableOpacity
+                  onPress={() => {
+                    setPerfer("expense");
+                  }}
+                  style={[
+                    styles.modalbtn,
+                    perfer == "expense" && {
+                      borderWidth: 0.5,
+                      borderColor: "#000",
+                      backgroundColor: "#D9D9D9",
+                    },
+                  ]}
+                >
+                  <Text>Expense</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => {
+                    setPerfer("income");
+                  }}
+                  style={[
+                    styles.modalbtn,
+                    perfer == "income" && {
+                      borderWidth: 0.5,
+                      borderColor: "#000",
+                      backgroundColor: "#D9D9D9",
+                    },
+                  ]}
+                >
+                  <Text>Income</Text>
+                </TouchableOpacity>
+              </View>
+              <TouchableOpacity style={styles.modaldone} onPress={handleAdd}>
+                <Ionicons name="checkmark" size={30} />
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity
-              style={styles.modaldone}
-              onPress={() => setShowModal(!showModal)}
-            >
-              <Ionicons name="checkmark" size={30} />
-            </TouchableOpacity>
           </View>
         </Modal>
 
@@ -188,11 +246,36 @@ export default function Index() {
 }
 
 const styles = StyleSheet.create({
-  modal: {},
-  modalname: {},
-  modaldone: {},
-  modalbtn: {},
-  modalprefercontainer: {},
+  modalname: {
+    fontWeight: "bold",
+    margin: 10,
+  },
+  modaldone: {
+    marginTop: 30,
+  },
+  modalbtn: {
+    backgroundColor: "#d4d4d4",
+    height: 40,
+    width: 100,
+    fontWeight: "800",
+    elevation: 4,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 10,
+  },
+  modalcontent: {
+    height: 250,
+    width: "80%",
+    borderRadius: 50,
+    backgroundColor: "#D4D4D4",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalprefercontainer: {
+    flexDirection: "row",
+    gap: 10,
+  },
   modalcontainer: {
     flex: 1,
     justifyContent: "center",
