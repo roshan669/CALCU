@@ -1,13 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   KeyboardAvoidingView,
   Modal,
-  NativeSyntheticEvent,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
-  TextInputChangeEventData,
   ToastAndroid,
   TouchableOpacity,
   View,
@@ -154,8 +152,9 @@ export default function Index() {
       const storedData = await AsyncStorage.getItem("perfer");
       const existingData: input[] = storedData ? JSON.parse(storedData) : [];
 
+      const trim = addName.trim();
       const newData = {
-        name: addName,
+        name: trim,
         toggle: perfer,
       };
       setAddName("");
@@ -205,7 +204,7 @@ export default function Index() {
     }
   };
   return (
-    <KeyboardAvoidingView behavior="position" style={{ flex: 1 }}>
+    <KeyboardAvoidingView behavior="position">
       <View style={styles.container}>
         <View style={styles.resultcontainer}>
           <Text style={styles.text}> Total Gross Income</Text>
@@ -231,22 +230,19 @@ export default function Index() {
                     justifyContent: "center",
                   }}
                 >
-                  <Text
-                    style={[
-                      styles.text,
-                      item.toggle == "expense"
-                        ? { color: "red" }
-                        : { color: "green" },
-                    ]}
-                  >
-                    {item.name}
-                  </Text>
-                  <Ionicons name="trash" size={15} color={"#222"} />
+                  <Text style={styles.text}>{item.name}</Text>
+                  <Ionicons name="trash" size={10} color={"#222"} />
                 </TouchableOpacity>
 
                 <TextInput
                   key={index}
-                  style={styles.input}
+                  placeholder="0"
+                  style={[
+                    styles.input,
+                    item.toggle === "expense"
+                      ? { borderColor: "red", borderWidth: 0.25 }
+                      : { borderColor: "green", borderWidth: 0.25 },
+                  ]}
                   onChangeText={(text) =>
                     handleChange(text, item.toggle, item.name)
                   }
@@ -369,8 +365,9 @@ export default function Index() {
 
 const styles = StyleSheet.create({
   modalname: {
-    fontWeight: "bold",
+    fontWeight: "heavy",
     margin: 10,
+    fontSize: 24,
   },
   modaldone: {
     marginTop: 30,
@@ -387,10 +384,10 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   modalcontent: {
-    height: 270,
-    width: "87%",
-    borderRadius: 50,
-    backgroundColor: "#D4D4D4",
+    height: 260,
+    width: "85%",
+    borderRadius: 15,
+    backgroundColor: "#d4d4d4",
     justifyContent: "center",
     alignItems: "center",
   },
