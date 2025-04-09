@@ -1,11 +1,13 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   KeyboardAvoidingView,
   Modal,
+  NativeSyntheticEvent,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
+  TextInputChangeEventData,
   ToastAndroid,
   TouchableOpacity,
   View,
@@ -14,16 +16,15 @@ import {
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
-import { rgbaColor } from "react-native-reanimated/lib/typescript/Colors";
 
 interface ReportData {
   // Same interface as before
   todaysDate: string;
   totalGrossIncome: string;
   calculatedNetIncome: string;
-  empSalary: string;
-  expense: string;
   month: string;
+  all: list[];
+  time: string;
 }
 
 interface input {
@@ -31,12 +32,16 @@ interface input {
   toggle: string;
 }
 
+type list = {
+  name: string;
+  value: number;
+};
+
 export default function Index() {
   const [netIncome, setNetIncome] = useState<string>("0");
   const [totalGrossIncome, setTotalGrossIncome] = useState<string>("0");
-  const [empSalary, setEmpSalary] = useState<string>("");
-  const [expList, setExpList] = useState<string[]>([]);
-  const [incList, SetIncList] = useState<string[]>([]);
+  const [expList, setExpList] = useState<list[]>([]);
+  const [incList, setIncList] = useState<list[]>([]);
   const [showModal, setShowModal] = useState<boolean>(false);
   const [perfer, setPerfer] = useState<string>("");
   const [allinputs, setAllInputs] = useState<input[]>([]);
@@ -45,37 +50,61 @@ export default function Index() {
 
   const todaysDate = new Date().toDateString().slice(4);
 
+  const data = async () => {
+    const storedData = await AsyncStorage.getItem("perfer");
+    const existingData: input[] = storedData ? JSON.parse(storedData) : [];
+
+    setAllInputs(existingData);
+  };
+
+  useEffect(() => {
+    data();
+  }, []);
+
+  useEffect(() => {
+    const initialExpList: list[] = [];
+    const initialIncList: list[] = [];
+
+    allinputs.forEach((input) => {
+      if (input.toggle === "expense") {
+        initialExpList.push({ name: input.name, value: 0 });
+      } else if (input.toggle === "income") {
+        initialIncList.push({ name: input.name, value: 0 });
+      }
+    });
+
+    setExpList(initialExpList);
+    setIncList(initialIncList);
+  }, [allinputs]);
+
   const calculate = async () => {
-    const parsedExpense = parseFloat(expense) || 0;
+    const totalGrossIncome = incList
+      .reduce((sum, item) => {
+        return sum + (item.value || 0);
+      }, 0)
+      .toString(); // Convert to string here
 
-    const parsedGrossIncomeCash = parseFloat(grossIncomeCash) || 0;
+    const totalExpense = expList.reduce((sum, item) => {
+      return sum + (item.value || 0);
+    }, 0);
 
-    const parsedGrossIncomeDigital = parseFloat(grossIncomeDigital) || 0;
-
-    const pardedEmpSalary = parseFloat(empSalary) || 0;
-
-    const totalGross = parsedGrossIncomeCash + parsedGrossIncomeDigital;
-    const parsedToalGross = totalGross.toString();
-
-    const calculatedNetIncome = totalGross - parsedExpense - pardedEmpSalary;
-
+    const calculatedNetIncome =
+      (parseFloat(totalGrossIncome) || 0) - totalExpense;
     const stringCalculatedNetIncome = calculatedNetIncome.toString();
 
-    setTotalGrossIncome(parsedToalGross);
-    setNetIncome(calculatedNetIncome.toString());
+    setTotalGrossIncome(totalGrossIncome);
+    setNetIncome(stringCalculatedNetIncome);
 
     const month = todaysDate.slice(0, 3) + " " + todaysDate.slice(7, 11);
-
     const time = new Date().toString();
 
     return {
       todaysDate,
-      totalGrossIncome: totalGross.toString(),
-      calculatedNetIncome: stringCalculatedNetIncome,
-      empSalary,
-      expense,
+      totalGrossIncome, // Use the correct property name
+      calculatedNetIncome: stringCalculatedNetIncome, // Use the correct property name
       month,
       time,
+      all: [...expList, ...incList], // Keep this as list[] if that's your intention
     };
   };
 
@@ -106,11 +135,6 @@ export default function Index() {
   };
 
   const handleSubmit = async () => {
-    if (!expense || !grossIncomeCash || !grossIncomeDigital || !empSalary) {
-      ToastAndroid.show("Please fill all the fields", ToastAndroid.SHORT);
-      return;
-    }
-
     try {
       const details = await calculate();
       await updateReportData(details);
@@ -121,6 +145,11 @@ export default function Index() {
   };
 
   const handleAdd = async () => {
+    if (addName == "" || perfer == "") {
+      ToastAndroid.show("please enter a value and select nature", 1000);
+      return;
+    }
+
     try {
       const storedData = await AsyncStorage.getItem("perfer");
       const existingData: input[] = storedData ? JSON.parse(storedData) : [];
@@ -135,12 +164,46 @@ export default function Index() {
       existingData.push(newData);
 
       await AsyncStorage.setItem("perfer", JSON.stringify(existingData));
+      data();
       setShowModal(!showModal);
     } catch (error) {
       ToastAndroid.show("Error saving data", ToastAndroid.SHORT);
     }
   };
 
+  const handleDelete = async (name: string) => {
+    try {
+      const storedData = await AsyncStorage.getItem("perfer");
+      const existingData: input[] = storedData ? JSON.parse(storedData) : [];
+
+      const updatedData = existingData.filter((item) => item.name !== name);
+
+      await AsyncStorage.setItem("perfer", JSON.stringify(updatedData));
+      data();
+    } catch (error) {
+      ToastAndroid.show("Error saving data", ToastAndroid.SHORT);
+    }
+  };
+
+  const handleChange = (e: string, toggle: string, name: string) => {
+    let newValue = parseInt(e, 10);
+    if (e === "") newValue = 0;
+    if (isNaN(newValue)) return;
+
+    if (toggle === "expense") {
+      setExpList((prev) =>
+        prev.map((item, i) =>
+          item.name === name ? { ...item, value: newValue } : item
+        )
+      );
+    } else if (toggle === "income") {
+      setIncList((prev) =>
+        prev.map((item, i) =>
+          item.name === name ? { ...item, value: newValue } : item
+        )
+      );
+    }
+  };
   return (
     <KeyboardAvoidingView behavior="position" style={{ flex: 1 }}>
       <View style={styles.container}>
@@ -155,20 +218,56 @@ export default function Index() {
 
         <ScrollView
           style={styles.inputcontainer}
-          contentContainerStyle={styles.inputitems}
+          contentContainerStyle={[styles.inputitems, { margin: 20 }]}
         >
-          <Text></Text>
-          <TouchableOpacity
-            onPress={() => setShowModal(!showModal)}
-            style={styles.addrmvbtn}
-          >
-            <Ionicons
-              name="add-circle"
-              size={50}
-              color={"rgba(0, 0, 0, 0.1)"}
-            />
-            {<Text>Add expense or income</Text>}
-          </TouchableOpacity>
+          {allinputs.map((item, index) => {
+            return (
+              <View key={index}>
+                <TouchableOpacity
+                  onLongPress={() => handleDelete(item.name)}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.text,
+                      item.toggle == "expense"
+                        ? { color: "red" }
+                        : { color: "green" },
+                    ]}
+                  >
+                    {item.name}
+                  </Text>
+                  <Ionicons name="trash" size={15} color={"#222"} />
+                </TouchableOpacity>
+
+                <TextInput
+                  key={index}
+                  style={styles.input}
+                  onChangeText={(text) =>
+                    handleChange(text, item.toggle, item.name)
+                  }
+                  keyboardType="numeric"
+                />
+              </View>
+            );
+          })}
+          <View>
+            <TouchableOpacity
+              onPress={() => setShowModal(!showModal)}
+              style={styles.addrmvbtn}
+            >
+              <Ionicons
+                name="add-circle"
+                size={50}
+                color={"rgba(0, 0, 0, 0.1)"}
+              />
+              {allinputs.length < 1 && <Text>Add expense or income</Text>}
+            </TouchableOpacity>
+          </View>
         </ScrollView>
 
         <Modal
@@ -183,6 +282,7 @@ export default function Index() {
             <View style={styles.modalcontent}>
               <Text style={styles.modalname}>Add Expense or Income</Text>
               <TextInput
+                placeholder="eg:salary"
                 onChangeText={(t) => {
                   setAddName(t);
                 }}
@@ -221,16 +321,38 @@ export default function Index() {
                   <Text>Income</Text>
                 </TouchableOpacity>
               </View>
-              <TouchableOpacity style={styles.modaldone} onPress={handleAdd}>
-                <Ionicons name="checkmark" size={30} />
-              </TouchableOpacity>
+              <View style={{ flexDirection: "row-reverse", gap: 80 }}>
+                <TouchableOpacity style={styles.modaldone} onPress={handleAdd}>
+                  <Ionicons name="checkmark" size={35} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.modaldone}
+                  onPress={() => {
+                    setShowModal(!showModal);
+                  }}
+                >
+                  <Ionicons size={35} name="close-outline" />
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         </Modal>
 
-        <TouchableOpacity style={styles.button} onPress={handleSubmit}>
-          <Text style={styles.text}>Insert</Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: "row", gap: 30 }}>
+          <TouchableOpacity
+            style={[styles.button, { width: 137 }]}
+            onPress={calculate}
+          >
+            <Text style={styles.text}>Calculate</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.button, { width: 137 }]}
+            onPress={handleSubmit}
+          >
+            <Text style={styles.text}>Insert</Text>
+          </TouchableOpacity>
+        </View>
 
         <TouchableOpacity
           style={styles.button}
@@ -265,8 +387,8 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   modalcontent: {
-    height: 250,
-    width: "80%",
+    height: 270,
+    width: "87%",
     borderRadius: 50,
     backgroundColor: "#D4D4D4",
     justifyContent: "center",
@@ -274,7 +396,7 @@ const styles = StyleSheet.create({
   },
   modalprefercontainer: {
     flexDirection: "row",
-    gap: 10,
+    gap: 20,
   },
   modalcontainer: {
     flex: 1,
@@ -292,6 +414,7 @@ const styles = StyleSheet.create({
   addrmvbtn: {
     justifyContent: "center",
     alignItems: "center",
+    marginBottom: 30,
   },
   container: {
     flexDirection: "column",
@@ -330,7 +453,7 @@ const styles = StyleSheet.create({
   input: {
     margin: 10,
     borderColor: "#222222",
-    width: 200,
+    width: 250,
     borderRadius: 10,
     height: 40,
     boxSizing: "border-box",
