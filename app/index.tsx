@@ -14,6 +14,7 @@ import {
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
+import { BlurView } from "expo-blur";
 
 interface ReportData {
   // Same interface as before
@@ -281,7 +282,11 @@ export default function Index() {
             setShowModal(!showModal);
           }}
         >
-          <View style={styles.modalcontainer}>
+          <BlurView
+            intensity={100}
+            tint="extraLight"
+            style={styles.modalcontainer}
+          >
             <View style={styles.modalcontent}>
               <Text style={styles.modalname}>Add Expense or Income</Text>
               <TextInput
@@ -338,7 +343,7 @@ export default function Index() {
                 </TouchableOpacity>
               </View>
             </View>
-          </View>
+          </BlurView>
         </Modal>
 
         <View style={{ flexDirection: "row", gap: 30 }}>
@@ -397,6 +402,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#d4d4d4",
     justifyContent: "center",
     alignItems: "center",
+    elevation: 10,
   },
   modalprefercontainer: {
     flexDirection: "row",
@@ -407,7 +413,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     flexGrow: 1,
-    backgroundColor: "rgba(0,0,0,0.6)",
+    // backgroundColor: "rgba(0,0,0,0.6)",
   },
   inputitems: {
     flexDirection: "column",
