@@ -95,14 +95,21 @@ export default function Index() {
 
     const month = todaysDate.slice(0, 3) + " " + todaysDate.slice(7, 11);
     const time = new Date().toString();
+    const allData = [...expList, ...incList].map((item) => {
+      return {
+        name: item.name,
+        value: item.value,
+      };
+    });
 
+    console.log(allData);
     return {
       todaysDate,
       totalGrossIncome, // Use the correct property name
       calculatedNetIncome: stringCalculatedNetIncome, // Use the correct property name
       month,
       time,
-      all: [...expList, ...incList], // Keep this as list[] if that's your intention
+      all: allData,
     };
   };
 

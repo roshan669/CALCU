@@ -13,33 +13,41 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Print from "expo-print";
 
 interface ReportData {
+  // Same interface as before
   todaysDate: string;
   totalGrossIncome: string;
   calculatedNetIncome: string;
-  empSalary: string;
-  expense: string;
   month: string;
-  time?: string;
+  all: list[];
+  time: string;
+  [key: string]: string | number | list[] | undefined; // Allow dynamic properties
 }
 
+type list = {
+  name: string;
+  value: number;
+};
+
 export default function Report() {
-  const [reportData, setReportData] = useState<ReportData[]>([]); // Now an array of ReportData
+  const [reportData, setReportData] = useState<ReportData[]>([]);
   const [allMonths, setAllMonths] = useState<string[]>([]);
   const isMounted = useRef(true);
 
   const getAllKeys = async () => {
     try {
       const keys = await AsyncStorage.getAllKeys();
-      return keys; // Return the keys (important!)
+      return keys;
     } catch (error) {
-      return []; // Return an empty array in case of error (good practice)
+      return [];
     }
   };
 
   useEffect(() => {
-    const fetchKeys = async () => {
+    const fetchInitialData = async () => {
       const keys = await getAllKeys();
-      setAllMonths([...keys]); // Directly set the keys array
+      const filteredkeys = keys.filter((item) => item !== "perfer");
+      setAllMonths(filteredkeys);
+
       if (keys.length > 4) {
         await Promise.all(
           keys.map(async (monthKey) => {
@@ -47,17 +55,16 @@ export default function Report() {
           })
         );
       }
+
+      const todaysDate = new Date().toDateString().slice(4);
+      const month = todaysDate.slice(0, 3) + " " + todaysDate.slice(7, 11);
+      loadReportData(month);
     };
 
-    fetchKeys();
-    const todaysDate = new Date().toDateString().slice(4);
-    const month = todaysDate.slice(0, 3) + " " + todaysDate.slice(7, 11);
-
-    loadReportData(month);
+    fetchInitialData();
 
     return () => {
-      // Cleanup function for component unmount
-      isMounted.current = false; // Set mount status to false
+      isMounted.current = false;
     };
   }, []);
 
@@ -67,22 +74,16 @@ export default function Report() {
       if (storedData) {
         const reportDataForMonth = JSON.parse(storedData);
         if (reportDataForMonth && reportDataForMonth.length > 0) {
-          // Check for valid data
-
           const firstReportDateString = reportDataForMonth[0].time;
           const firstReportDate = new Date(firstReportDateString);
-
           const currentDate = new Date();
-
           const timeDifference =
             currentDate.getTime() - firstReportDate.getTime();
           const daysDifference = Math.ceil((timeDifference / 1000) * 3600 * 24);
 
           if (daysDifference >= 90) {
             await AsyncStorage.removeItem(monthKey);
-
             if (isMounted.current) {
-              // Check if component is still mounted
               ToastAndroid.show(
                 "Financial report for " +
                   monthKey +
@@ -90,8 +91,7 @@ export default function Report() {
                 ToastAndroid.SHORT
               );
               if (monthKey === reportData[0]?.month) {
-                // Optional chaining
-                loadReportData(monthKey); // Refresh if current month was cleared
+                loadReportData(monthKey);
               }
             }
           }
@@ -106,62 +106,117 @@ export default function Report() {
     try {
       const storedData = await AsyncStorage.getItem(month);
       if (!storedData) {
-        ToastAndroid.show("No data to display", ToastAndroid.SHORT); // Show a toast if there is no data
+        ToastAndroid.show(
+          "No data to display for " + month,
+          ToastAndroid.SHORT
+        );
+        setReportData([]); // Clear previous data
         return;
       }
-      setReportData(JSON.parse(storedData));
+
+      const parsedData = JSON.parse(storedData);
+
+      setReportData(parsedData);
     } catch (error) {
       console.error("Error loading data:", error);
     }
   };
 
   const calculateTotals = () => {
-    let totalExpenses = 0;
-    let totalSalary = 0;
     let totalGross = 0;
     let totalNet = 0;
 
     reportData.forEach((item) => {
-      totalExpenses += parseFloat(item.expense) || 0;
-      totalSalary += parseFloat(item.empSalary) || 0;
       totalGross += parseFloat(item.totalGrossIncome) || 0;
       totalNet += parseFloat(item.calculatedNetIncome) || 0;
     });
 
     return {
-      totalExpenses: totalExpenses.toFixed(2), // Format to 2 decimal places
-      totalSalary: totalSalary.toFixed(2),
-      totalGross: totalGross.toFixed(2),
-      totalNet: totalNet.toFixed(2),
+      totalGross: totalGross.toFixed(1),
+      totalNet: totalNet.toFixed(1),
     };
   };
 
-  const tableHead = [
-    "Date",
-    "Expenses",
-    "Salary",
-    "Gross Income",
-    "Net Income",
-  ];
+  const getTableHead = () => {
+    const staticHeaders = ["Date", "Gross Income", "Net Income"];
+    let dynamicHeaders: string[] = [];
 
+    if (reportData && reportData.length > 0) {
+      let longestAllArray: list[] = [];
+
+      // Find the reportData item with the longest 'all' array
+      reportData.forEach((item) => {
+        if (
+          item.all &&
+          Array.isArray(item.all) &&
+          item.all.length > longestAllArray.length
+        ) {
+          longestAllArray = item.all;
+        }
+      });
+
+      // Extract unique 'name' values from the longest 'all' array as headers
+      const seenNames = new Set<string>();
+      longestAllArray.forEach((item) => {
+        if (item.name && !seenNames.has(item.name)) {
+          dynamicHeaders.push(item.name);
+          seenNames.add(item.name);
+        }
+      });
+    }
+
+    return [...staticHeaders, ...dynamicHeaders];
+  };
+
+  const tableHead = getTableHead();
   const totals = calculateTotals();
 
-  const tableFoot = [
-    "Total",
-    "Rs." + totals.totalExpenses, // Use calculated totals
-    "Rs." + totals.totalSalary,
-    "Rs." + totals.totalGross,
-    "Rs." + totals.totalNet,
-  ];
+  const getTableData = () => {
+    const headers = getTableHead(); // Get the updated headers (including dynamic ones)
+    return reportData.map((item) => {
+      const rowData: (string | number | undefined)[] = [
+        item.todaysDate,
+        item.totalGrossIncome,
+        item.calculatedNetIncome,
+      ];
 
-  const tableData = reportData.map((item) => [
-    // Map over the array
-    item.todaysDate,
-    item.expense,
-    item.empSalary,
-    item.totalGrossIncome,
-    item.calculatedNetIncome,
-  ]);
+      // Add dynamic values based on the headers
+      headers.slice(3).forEach((header) => {
+        // Skip static headers
+        const foundItem = (item.all || []).find(
+          (allItem) => allItem.name === header
+        );
+        rowData.push(foundItem ? foundItem.value?.toString() : "Nill"); // Or "".toString() for empty string
+      });
+
+      return rowData;
+    });
+  };
+
+  const tableData = getTableData();
+
+  const getTableFoot = () => {
+    const headers = getTableHead(); // Get the updated headers
+    const staticFoot = ["Total Rs.", totals.totalGross, totals.totalNet];
+    const dynamicExpenseIncomeTotals: string[] = [];
+
+    // Calculate totals for dynamic columns
+    headers.slice(3).forEach((header) => {
+      let total = 0;
+      reportData.forEach((item) => {
+        const foundItem = (item.all || []).find(
+          (allItem) => allItem.name === header
+        );
+        total += foundItem ? parseInt(foundItem.value as string) || 0 : 0;
+      });
+      dynamicExpenseIncomeTotals.push(total.toFixed(0));
+    });
+
+    return [...staticFoot, ...dynamicExpenseIncomeTotals];
+  };
+
+  const tableFoot = getTableFoot();
+
   const generateHTML = () => {
     let html = `
       <!DOCTYPE html>
@@ -206,7 +261,9 @@ export default function Report() {
             ${tableData
               .map(
                 (row) =>
-                  `<tr>${row.map((cell) => `<td>${cell}</td>`).join("")}</tr>`
+                  `<tr>${row
+                    .map((cell) => `<td>${cell || ""}</td>`)
+                    .join("")}</tr>`
               )
               .join("")}
           </tbody>
@@ -226,10 +283,10 @@ export default function Report() {
     const html = generateHTML();
 
     await Print.printAsync({ html }).then(() => {
-      if (reportData.length > 20) {
+      if (reportData.length > 20 && reportData[0]?.month) {
         AsyncStorage.removeItem(reportData[0].month, () => {
           ToastAndroid.show(
-            "Finacial report cleared Save PDF for Backup ",
+            "Financial report cleared Save PDF for Backup ",
             ToastAndroid.SHORT
           );
         });
@@ -275,7 +332,7 @@ export default function Report() {
             horizontal={true}
             data={allMonths}
             renderItem={renderItem}
-            keyExtractor={(item) => item} // Use the key itself as the key
+            keyExtractor={(item) => item}
           />
         ) : (
           <Text>No Data</Text>
@@ -292,7 +349,7 @@ export default function Report() {
               marginTop: 10,
             }}
           >
-            {reportData.length > 0 ? reportData[0].month : ""}{" "}
+            {reportData.length > 0 ? reportData[0].month : "Select Month"}
           </Text>
           <Table borderStyle={{ borderWidth: 1, borderColor: "#C1C0C9" }}>
             <Row
@@ -323,7 +380,7 @@ export default function Report() {
 const styles = StyleSheet.create({
   printButton: {
     marginTop: 20,
-    backgroundColor: "#007AFF", // Example color
+    backgroundColor: "#007AFF",
     padding: 10,
     borderRadius: 5,
     alignItems: "center",
@@ -336,9 +393,9 @@ const styles = StyleSheet.create({
   },
   container: { flex: 1, backgroundColor: "#fff" },
   head: { height: 50, backgroundColor: "#f1f8ff" },
-  headText: { margin: 1, textAlign: "center", fontWeight: "bold" }, // Style object for head text
+  headText: { margin: 1, textAlign: "center", fontWeight: "bold" },
   row: { flexDirection: "row", backgroundColor: "#FFF1C1" },
-  rowText: { margin: 1, textAlign: "center" }, // Style object for row text
+  rowText: { margin: 1, textAlign: "center" },
   months: {
     height: 50,
     backgroundColor: "#007AFF",
