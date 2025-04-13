@@ -578,7 +578,6 @@ export default function Index() {
 // --- Styles --- (Includes additions and refinements)
 const styles = StyleSheet.create({
   container: {
-    // flex: 1, // Make container take full height if needed
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "flex-start", // Align items to the top

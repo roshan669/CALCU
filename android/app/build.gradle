@@ -86,9 +86,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.cody669.CALCU'
+    namespace 'com.cody669.Calcu'
     defaultConfig {
-        applicationId 'com.cody669.CALCU'
+        applicationId 'com.cody669.Calcu'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

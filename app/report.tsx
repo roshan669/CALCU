@@ -42,7 +42,6 @@ export default function Report() {
 
   // --- AsyncStorage Interaction ---
   const getAllMonthKeys = useCallback(async (): Promise<string[]> => {
-    // ... (implementation remains the same) ...
     try {
       const keys = await AsyncStorage.getAllKeys();
       const monthKeys = keys
@@ -174,13 +173,11 @@ export default function Report() {
     return () => {
       isMounted.current = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // --- Data Processing & Table Generation (Memoized) ---
 
   const calculateTotals = useMemo(() => {
-    // ... (implementation remains the same) ...
     let totalGross = 0;
     let totalNet = 0;
     reportData.forEach((item) => {
@@ -194,7 +191,6 @@ export default function Report() {
   }, [reportData]);
 
   const tableHead = useMemo(() => {
-    // ... (implementation remains the same) ...
     const staticHeaders = ["Date", "Gross Income", "Net Income"];
     const dynamicHeaderNames = new Set<string>();
     reportData.forEach((entry) => {
@@ -263,7 +259,6 @@ export default function Report() {
 
   // --- HTML Generation & Printing ---
   const generateHTML = useCallback(() => {
-    // Removed colgroup as fixed pixel widths don't translate well to HTML fluid layout
     const currentMonth =
       reportData.length > 0 ? reportData[0].month : selectedMonthTitle;
     let html = `
@@ -308,7 +303,6 @@ export default function Report() {
   }, [tableHead, tableData, tableFoot, reportData, selectedMonthTitle]); // Removed columnWidthArr dependency
 
   const printReport = async () => {
-    // ... (implementation remains the same) ...
     if (reportData.length === 0) {
       ToastAndroid.show(
         "No data to print for the selected month",

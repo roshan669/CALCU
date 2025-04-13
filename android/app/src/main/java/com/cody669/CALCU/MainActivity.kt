@@ -1,4 +1,4 @@
-package com.cody669.CALCU
+package com.cody669.Calcu
 import expo.modules.splashscreen.SplashScreenManager
 
 import android.os.Build

@@ -1,4 +1,4 @@
-package com.cody669.CALCU
+package com.cody669.Calcu
 
 import android.app.Application
 import android.content.res.Configuration
