@@ -1,5 +1,7 @@
 # CALCU -> Small Business Financial Tracker
-[⬇️ Download](https://github.com/roshan669/CALCU/releases/download/calcu/app-release.apk)
+<img src="https://github.com/user-attachments/assets/01ce197e-a9c1-40dd-8d60-ec1868847e26" height="100" width="100" ><br>
+## [⬇️ Download](https://github.com/roshan669/CALCU/releases/download/calcu/app-release.apk)
+
 
 This React Native application helps small business owners easily track their monthly income and expenses. It provides a simple and intuitive interface to record daily transactions, calculate monthly totals, and generate reports. Data is stored locally using AsyncStorage, allowing for offline access.
 
