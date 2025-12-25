@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   KeyboardAvoidingView,
   Modal,
@@ -289,38 +289,41 @@ export default function Index() {
   };
 
   // --- Input Change Handler ---
-  const handleChange = (text: string, toggle: string, name: string) => {
-    // Allow empty input to represent 0
-    const newValue = text === "" ? 0 : parseInt(text, 10);
+  const handleChange = useCallback(
+    (text: string, toggle: string, name: string) => {
+      // Allow empty input to represent 0
+      const newValue = text === "" ? 0 : parseInt(text, 10);
 
-    // Prevent update if parsing fails (e.g., user types non-numeric characters)
-    // Allow 0 even though isNaN(0) is false.
-    if (isNaN(newValue) && text !== "") {
-      console.warn(`Invalid input detected: "${text}"`);
-      // Optionally provide user feedback here if needed
-      return;
-    }
+      // Prevent update if parsing fails (e.g., user types non-numeric characters)
+      // Allow 0 even though isNaN(0) is false.
+      if (isNaN(newValue) && text !== "") {
+        console.warn(`Invalid input detected: "${text}"`);
+        // Optionally provide user feedback here if needed
+        return;
+      }
 
-    const updateList = (
-      listSetter: React.Dispatch<React.SetStateAction<list[]>>
-    ) => {
-      listSetter((prevList) =>
-        prevList.map((item) =>
-          item.name === name ? { ...item, value: newValue } : item
-        )
-      );
-    };
+      const updateList = (
+        listSetter: React.Dispatch<React.SetStateAction<list[]>>
+      ) => {
+        listSetter((prevList) =>
+          prevList.map((item) =>
+            item.name === name ? { ...item, value: newValue } : item
+          )
+        );
+      };
 
-    if (toggle === "expense") {
-      updateList(setExpList);
-    } else if (toggle === "income") {
-      updateList(setIncList);
-    }
-  };
+      if (toggle === "expense") {
+        updateList(setExpList);
+      } else if (toggle === "income") {
+        updateList(setIncList);
+      }
+    },
+    []
+  );
 
   // --- Render Component ---
   return (
-    <KeyboardAvoidingView behavior="position">
+    <KeyboardAvoidingView behavior="height" keyboardVerticalOffset={90}>
       <View style={styles.container}>
         <View style={styles.resultcontainer}>
           <Text style={styles.text}> Gross Income</Text>
@@ -556,20 +559,20 @@ export default function Index() {
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity
-          style={[styles.button, styles.reportButton]}
-          onPress={() => {
-            router.push("./report"); // Ensure this route exists in your Expo Router setup
-          }}
-        >
-          <Ionicons
-            name="document-text-outline"
-            size={20}
-            color="#fff"
-            style={{ marginRight: 5 }}
-          />
-          <Text style={styles.buttonText}>Monthly Report</Text>
-        </TouchableOpacity>
+        {/* <TouchableOpacity
+        style={[styles.button, styles.reportButton]}
+        onPress={() => {
+          router.push("./report"); // Ensure this route exists in your Expo Router setup
+        }}
+      >
+        <Ionicons
+          name="document-text-outline"
+          size={20}
+          color="#fff"
+          style={{ marginRight: 5 }}
+        />
+        <Text style={styles.buttonText}>Monthly Report</Text>
+      </TouchableOpacity> */}
       </View>
     </KeyboardAvoidingView>
   );
@@ -607,9 +610,8 @@ const styles = StyleSheet.create({
   },
   inputcontainer: {
     backgroundColor: "#ffffff",
-    width: "90%", // Use percentage for responsiveness
-    // maxHeight: 400, // Set max height instead of fixed height
-    flex: 1, // Allow it to take available space
+    width: "100%",
+    flex: 1,
     borderRadius: 10,
     elevation: 3,
     marginBottom: 15,
@@ -737,11 +739,11 @@ const styles = StyleSheet.create({
   },
   // Bottom Buttons Styling
   bottomButtonContainer: {
+    gap: 20,
     flexDirection: "row",
     justifyContent: "space-around",
-    width: "90%",
+    width: "95%",
     marginTop: 10, // Add some space above the split buttons
-    marginBottom: 10,
   },
   button: {
     // Shared button styles
