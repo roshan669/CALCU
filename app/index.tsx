@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   KeyboardAvoidingView,
-  Modal,
   ScrollView,
   StyleSheet,
   Text,
@@ -10,46 +9,57 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-
-import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
-import { BlurView } from "expo-blur";
-
-interface ReportData {
-  // Same interface as before
-  todaysDate: string;
-  totalGrossIncome: string;
-  calculatedNetIncome: string;
-  month: string;
-  all: list[];
-  time: string;
-}
-
-interface input {
-  name: string;
-  toggle: string;
-}
-
-type list = {
-  name: string;
-  value: number;
-};
+import {
+  BottomSheetBackdrop,
+  BottomSheetModal,
+  BottomSheetView,
+  BottomSheetTextInput,
+} from "@gorhom/bottom-sheet";
+import { Colors } from "@/constants/theme";
+import type { list, input, ReportData } from "@/types/types";
+import Alert from "@/components/Alert.modal";
+import { title, description } from "@/constants/textData";
 
 export default function Index() {
   const [netIncome, setNetIncome] = useState<string>("0");
   const [totalGrossIncome, setTotalGrossIncome] = useState<string>("0");
   const [expList, setExpList] = useState<list[]>([]);
   const [incList, setIncList] = useState<list[]>([]);
-  const [showModal, setShowModal] = useState<boolean>(false);
   const [perfer, setPerfer] = useState<string>("");
   const [allinputs, setAllInputs] = useState<input[]>([]);
   const [addName, setAddName] = useState<string>("");
-  const [showWarning, setShowWarning] = useState<boolean>(false);
+  const [showWarning, setShowWarning] = useState<string | null>(null);
   const [agree, setAgree] = useState<boolean>(false);
   // State to hold data temporarily when waiting for user confirmation
   const [dataToUpdate, setDataToUpdate] = useState<ReportData | null>(null);
-  const router = useRouter();
+  const [itemToDelete, setItemToDelete] = useState<string>("");
+  const bottomSheetModalRef = useRef<BottomSheetModal>(null);
+
+  const handlePresentModalPress = useCallback(() => {
+    bottomSheetModalRef.current?.present();
+  }, []);
+
+  const handleSheetChanges = useCallback((index: number) => {
+    console.log("handleSheetChanges", index);
+  }, []);
+
+  const handleSheetClose = useCallback(() => {
+    bottomSheetModalRef.current?.close();
+  }, []);
+
+  const renderBackdrop = useCallback(
+    (props: any) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        opacity={0.3}
+      />
+    ),
+    []
+  );
 
   const todaysDate = new Date().toDateString().slice(4);
 
@@ -143,7 +153,7 @@ export default function Index() {
       if (existingEntryIndex !== -1) {
         // Data for today already exists - ask the user
         setDataToUpdate(newData); // Store the new data temporarily
-        setShowWarning(true); // Show the warning modal
+        setShowWarning("save"); // Show the warning modal
       } else {
         // No data for today - insert directly
         existingData.push(newData);
@@ -161,9 +171,10 @@ export default function Index() {
 
   // useEffect to handle the update *after* user agrees
   useEffect(() => {
-    const performUpdate = async () => {
-      // Only proceed if user agreed AND there is data waiting
-      if (agree && dataToUpdate) {
+    const performOperation = async () => {
+      if (!agree) return;
+
+      if (showWarning === "save" && dataToUpdate) {
         const month = dataToUpdate.month;
         try {
           const storedData = await AsyncStorage.getItem(month);
@@ -176,34 +187,32 @@ export default function Index() {
           );
 
           if (existingEntryIndex !== -1) {
-            // Replace the existing entry
             existingData[existingEntryIndex] = dataToUpdate;
             await AsyncStorage.setItem(month, JSON.stringify(existingData));
             ToastAndroid.show("Data updated successfully", ToastAndroid.LONG);
           } else {
-            // Should not happen if logic is correct, but handle defensively
-            console.warn("Attempted to update non-existent data after agree.");
-            existingData.push(dataToUpdate); // Insert if somehow missing
+            existingData.push(dataToUpdate);
             await AsyncStorage.setItem(month, JSON.stringify(existingData));
-            ToastAndroid.show(
-              "Data inserted (unexpectedly)",
-              ToastAndroid.LONG
-            );
+            ToastAndroid.show("Data inserted", ToastAndroid.LONG);
           }
         } catch (error) {
-          console.error("Error updating data after agree:", error);
+          console.error("Error updating data:", error);
           ToastAndroid.show("Error updating data", ToastAndroid.SHORT);
         } finally {
-          // Reset states regardless of success or error
           setDataToUpdate(null);
           setAgree(false);
-          // Keep showWarning false as it was set by the button press
+          setShowWarning(null);
         }
+      } else if (showWarning === "delete" && itemToDelete) {
+        await handleDelete(itemToDelete);
+        setAgree(false);
+        setShowWarning(null);
+        setItemToDelete("");
       }
     };
 
-    performUpdate();
-  }, [agree, dataToUpdate]); // Run this effect when 'agree' or 'dataToUpdate' changes
+    performOperation();
+  }, [agree, dataToUpdate, showWarning, itemToDelete]); // Run this effect when 'agree' or 'dataToUpdate' changes
 
   const handleSubmit = async () => {
     try {
@@ -222,11 +231,12 @@ export default function Index() {
   // --- Preference Add/Delete Logic ---
   const handleAdd = async () => {
     const trimmedName = addName.trim();
-    if (trimmedName === "" || perfer === "") {
-      ToastAndroid.show(
-        "Please enter a value and select nature",
-        ToastAndroid.SHORT
-      );
+    if (trimmedName === "") {
+      ToastAndroid.show("Please enter Item Name", ToastAndroid.SHORT);
+      return;
+    }
+    if (perfer === "") {
+      ToastAndroid.show("Please Select Type", ToastAndroid.SHORT);
       return;
     }
 
@@ -258,8 +268,8 @@ export default function Index() {
       // Reset modal state and reload preferences
       setAddName("");
       setPerfer("");
-      setShowModal(false); // Close modal on success
       loadPreferences(); // Reload preferences to update UI
+      handleSheetClose();
       ToastAndroid.show("Added successfully", ToastAndroid.SHORT);
     } catch (error) {
       console.error("Error saving preference:", error);
@@ -267,6 +277,10 @@ export default function Index() {
     }
   };
 
+  const handleDeleteWarning = (name: string) => {
+    setItemToDelete(name);
+    setShowWarning("delete");
+  };
   const handleDelete = async (name: string) => {
     try {
       const storedData = await AsyncStorage.getItem("perfer");
@@ -323,15 +337,17 @@ export default function Index() {
 
   // --- Render Component ---
   return (
-    <KeyboardAvoidingView behavior="height" keyboardVerticalOffset={90}>
+    <KeyboardAvoidingView behavior="height" keyboardVerticalOffset={100}>
       <View style={styles.container}>
         <View style={styles.resultcontainer}>
           <Text style={styles.text}> Gross Income</Text>
           <Text style={styles.text}> Net Income</Text>
         </View>
         <View style={styles.results}>
-          <Text style={{ fontSize: 20 }}>{totalGrossIncome}</Text>
-          <Text style={{ fontSize: 20 }}>{netIncome}</Text>
+          <Text style={{ fontSize: 25, fontWeight: "bold" }}>
+            {totalGrossIncome}
+          </Text>
+          <Text style={{ fontSize: 25, fontWeight: "bold" }}>{netIncome}</Text>
         </View>
 
         <ScrollView
@@ -350,7 +366,7 @@ export default function Index() {
             return (
               <View key={`${item.name}-${index}`} style={styles.inputRow}>
                 <TouchableOpacity
-                  onLongPress={() => handleDelete(item.name)}
+                  onLongPress={() => handleDeleteWarning(item.name)}
                   style={styles.inputLabelContainer}
                 >
                   <Text style={styles.text}>{item.name}</Text>
@@ -384,7 +400,7 @@ export default function Index() {
           {/* Add Button */}
           <View style={styles.addButtonContainer}>
             <TouchableOpacity
-              onPress={() => setShowModal(true)} // Use true directly
+              onPress={handlePresentModalPress}
               style={styles.addrmvbtn}
             >
               <Ionicons
@@ -392,143 +408,136 @@ export default function Index() {
                 size={50}
                 color={"rgba(0, 128, 0, 0.5)"} // Make it more visible
               />
-              {allinputs.length < 1 && <Text>Add expense or income</Text>}
+              {allinputs.length < 1 && (
+                <Text style={{ fontSize: 20, fontWeight: "bold" }}>
+                  Add expense or income
+                </Text>
+              )}
             </TouchableOpacity>
           </View>
         </ScrollView>
 
         {/* --- Modals --- */}
 
-        {/* Add Preference Modal */}
-        <Modal
-          animationType="fade"
-          transparent={true}
-          visible={showModal}
-          onRequestClose={() => {
-            setShowModal(false); // Use false directly
-            setAddName(""); // Clear state on close
-            setPerfer("");
-          }}
-          statusBarTranslucent
+        <BottomSheetModal
+          ref={bottomSheetModalRef}
+          onChange={handleSheetChanges}
+          backdropComponent={renderBackdrop}
+          keyboardBehavior="interactive"
+          keyboardBlurBehavior="restore"
         >
-          <BlurView
-            intensity={80} // Adjusted intensity
-            tint="light" // Changed tint
-            style={styles.modalcontainer}
-          >
-            <View style={styles.modalcontent}>
-              <Text style={styles.modalname}>Add Item</Text>
-              <TextInput
-                placeholder="type here..."
-                value={addName} // Control the input
-                onChangeText={setAddName}
-                style={styles.input} // Reuse input style
-                autoCapitalize="words"
-              />
+          <BottomSheetView style={styles.modalContentContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Add New Item</Text>
+            </View>
 
-              <View style={styles.modalprefercontainer}>
+            <View style={styles.modalInputContainer}>
+              <Text style={styles.inputLabel}>Item Name</Text>
+              <BottomSheetTextInput
+                placeholder="e.g., Groceries, Salary"
+                value={addName}
+                onChangeText={setAddName}
+                style={styles.modalInput}
+                autoCapitalize="words"
+                placeholderTextColor="#adb5bd"
+              />
+            </View>
+
+            <View style={styles.typeSelectionContainer}>
+              <Text style={styles.inputLabel}>Type</Text>
+              <View style={styles.typeButtonsRow}>
                 <TouchableOpacity
                   onPress={() => setPerfer("expense")}
                   style={[
-                    styles.modalbtn,
-                    styles.expenseButton, // Specific style for expense
-                    perfer === "expense" && styles.modalButtonSelected,
+                    styles.typeButton,
+                    styles.expenseTypeButton,
+                    perfer === "expense" && styles.expenseTypeButtonSelected,
                   ]}
+                  activeOpacity={0.7}
                 >
-                  <Text style={styles.modalButtonText}>Expense</Text>
+                  <Ionicons
+                    name={
+                      perfer === "expense"
+                        ? "arrow-down-circle"
+                        : "arrow-down-circle-outline"
+                    }
+                    size={24}
+                    color={perfer === "expense" ? "#d32f2f" : "#e57373"}
+                  />
+                  <Text
+                    style={[
+                      styles.typeButtonText,
+                      perfer === "expense" && styles.typeButtonTextSelected,
+                    ]}
+                  >
+                    Expense
+                  </Text>
                 </TouchableOpacity>
+
                 <TouchableOpacity
                   onPress={() => setPerfer("income")}
                   style={[
-                    styles.modalbtn,
-                    styles.incomeButton, // Specific style for income
-                    perfer === "income" && styles.modalButtonSelected,
+                    styles.typeButton,
+                    styles.incomeTypeButton,
+                    perfer === "income" && styles.incomeTypeButtonSelected,
                   ]}
-                >
-                  <Text style={styles.modalButtonText}>Income</Text>
-                </TouchableOpacity>
-              </View>
-              <View style={styles.modalActionButtons}>
-                <TouchableOpacity
-                  style={[styles.modaldone, styles.modalCloseButton]}
-                  onPress={() => {
-                    setShowModal(false);
-                    setAddName(""); // Clear state on close
-                    setPerfer("");
-                  }}
-                >
-                  <Ionicons size={35} name="close-outline" color="#d32f2f" />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.modaldone, styles.modalConfirmButton]}
-                  onPress={handleAdd}
+                  activeOpacity={0.7}
                 >
                   <Ionicons
-                    name="checkmark-outline"
-                    size={35}
-                    color="#388e3c"
+                    name={
+                      perfer === "income"
+                        ? "arrow-up-circle"
+                        : "arrow-up-circle-outline"
+                    }
+                    size={24}
+                    color={perfer === "income" ? "#388e3c" : "#81c784"}
                   />
+                  <Text
+                    style={[
+                      styles.typeButtonText,
+                      perfer === "income" && styles.typeButtonTextSelected,
+                    ]}
+                  >
+                    Income
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>
-          </BlurView>
-        </Modal>
 
-        {/* Warning Modal */}
-        <Modal
-          animationType="fade"
-          transparent={true}
-          visible={showWarning}
-          onRequestClose={() => {
-            setShowWarning(false);
-            setAgree(false); // Ensure agree is false if closed without choice
-            setDataToUpdate(null); // Clear pending data
-          }}
-          statusBarTranslucent
-        >
-          <BlurView style={styles.modalcontainer} intensity={80} tint="light">
-            <View style={styles.warningContent}>
-              <Ionicons
-                name="warning-outline"
-                size={40}
-                color="#f57c00"
-                style={{ marginBottom: 10 }}
-              />
-              <Text style={styles.warningText}>
-                Data for {todaysDate} already exists.
-              </Text>
-              <Text style={styles.warningSubText}>
-                Do you want to replace it with the current values?
-              </Text>
-              <View style={styles.warningButtons}>
-                <TouchableOpacity
-                  style={styles.warningNoButton} // "No" on the left
-                  onPress={() => {
-                    setShowWarning(false);
-                    setAgree(false); // Explicitly set agree to false
-                    setDataToUpdate(null); // Clear pending data
-                    ToastAndroid.show(
-                      "Operation cancelled",
-                      ToastAndroid.SHORT
-                    );
-                  }}
-                >
-                  <Text style={styles.warningButtonText}>No</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.warningYesButton} // "Yes" on the right
-                  onPress={() => {
-                    // Just set agree and close. The useEffect will handle the update.
-                    setAgree(true);
-                    setShowWarning(false);
-                  }}
-                >
-                  <Text style={styles.warningButtonText}>Yes</Text>
-                </TouchableOpacity>
-              </View>
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                style={[styles.actionButton, styles.cancelButton]}
+                onPress={() => {
+                  handleSheetClose();
+                  setAddName("");
+                  setPerfer("");
+                }}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.actionButton, styles.confirmButton]}
+                onPress={handleAdd}
+              >
+                <Text style={styles.confirmButtonText}>Add Item</Text>
+              </TouchableOpacity>
             </View>
-          </BlurView>
-        </Modal>
+          </BottomSheetView>
+        </BottomSheetModal>
+
+        {showWarning && (
+          <Alert
+            setAgree={setAgree}
+            showWarning={showWarning}
+            setShowWarning={setShowWarning}
+            setDataToUpdate={setDataToUpdate}
+            title={showWarning === "save" ? title.SAVE : title.DELETE}
+            description={
+              showWarning === "save" ? description.SAVE : description.DELETE
+            }
+          />
+        )}
 
         {/* Action Buttons */}
         <View style={styles.bottomButtonContainer}>
@@ -586,35 +595,34 @@ const styles = StyleSheet.create({
     justifyContent: "flex-start", // Align items to the top
     paddingBottom: 20, // Add padding at the bottom
     height: "100%", // Ensure it takes full screen height
-    backgroundColor: "#f8f9fa", // Light background for the whole screen
+    backgroundColor: Colors.light.background, // Light background for the whole screen
   },
   resultcontainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#e9ecef", // Lighter gray
     width: "100%",
-    height: 45, // Slightly smaller
+    maxHeight: 50, // Slightly smaller
     justifyContent: "space-around", // Better spacing
-    borderBottomWidth: 1,
-    borderBottomColor: "#dee2e6",
+    paddingVertical: 10,
   },
   results: {
     flexDirection: "row",
     alignItems: "center",
     width: "100%",
-    height: 55, // Slightly larger for results
+    maxHeight: 55, // Slightly larger for results
     justifyContent: "space-around", // Better spacing
     backgroundColor: "#ffffff", // White background for contrast
-    elevation: 2, // Subtle shadow
     marginBottom: 15, // Space before input area
+    paddingVertical: 10,
+    borderBottomColor: Colors.light.icon,
+    // borderBottomWidth: StyleSheet.hairlineWidth,s
   },
   inputcontainer: {
     backgroundColor: "#ffffff",
     width: "100%",
-    flex: 1,
+    // flex: 1,
     borderRadius: 10,
-    elevation: 3,
-    marginBottom: 15,
+    marginBottom: 5,
   },
   inputitems: {
     // Styles for the content inside ScrollView
@@ -627,6 +635,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     width: "90%", // Width relative to the container
     marginBottom: 10,
+    // minHeight: 70,
   },
   inputLabelContainer: {
     flexDirection: "row",
@@ -638,8 +647,8 @@ const styles = StyleSheet.create({
   },
   input: {
     // Shared input styles
-    height: 40,
-    width: 120, // Fixed width for the input field
+    height: 50,
+    width: 150, // Fixed width for the input field
     borderRadius: 8,
     paddingHorizontal: 10,
     fontSize: 16,
@@ -663,79 +672,120 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+  modalContentContainer: {
+    flex: 1,
+    padding: 24,
+    backgroundColor: "#fff",
+  },
+  modalHeader: {
+    marginBottom: 24,
+    alignItems: "center",
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: "#212529",
+  },
+  modalInputContainer: {
+    marginBottom: 24,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#495057",
+    marginBottom: 8,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  modalInput: {
+    height: 56,
+    backgroundColor: "#f8f9fa",
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    fontSize: 16,
+    color: "#212529",
+    borderWidth: 1,
+    borderColor: "#e9ecef",
+  },
+  typeSelectionContainer: {
+    marginBottom: 32,
+  },
+  typeButtonsRow: {
+    flexDirection: "row",
+    gap: 16,
+  },
+  typeButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 8,
+  },
+  expenseTypeButton: {
+    backgroundColor: "#fff",
+    borderColor: "#ffcdd2",
+  },
+  expenseTypeButtonSelected: {
+    backgroundColor: "#ffebee",
+    borderColor: "#ef5350",
+    borderWidth: 2,
+    elevation: 0, // Flat look for selected
+  },
+  incomeTypeButton: {
+    backgroundColor: "#fff",
+    borderColor: "#c8e6c9",
+  },
+  incomeTypeButtonSelected: {
+    backgroundColor: "#e8f5e9",
+    borderColor: "#66bb6a",
+    borderWidth: 2,
+    elevation: 0,
+  },
+  typeButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#495057",
+  },
+  typeButtonTextSelected: {
+    color: "#212529",
+    fontWeight: "700",
+  },
+  modalFooter: {
+    flexDirection: "row",
+    gap: 16,
+    marginTop: "auto", // Push to bottom if container has height
+  },
+  actionButton: {
+    flex: 1,
+    height: 56,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  cancelButton: {
+    backgroundColor: "#f1f3f5",
+  },
+  confirmButton: {
+    backgroundColor: "#212529",
+  },
+  cancelButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#495057",
+  },
+  confirmButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#fff",
+  },
+  // Keep modalcontainer for the warning modal
   modalcontainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-  },
-  modalcontent: {
-    width: "85%",
-    borderRadius: 15,
-    backgroundColor: "#ffffff", // White background
-    padding: 25,
-    alignItems: "center",
-    elevation: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-  },
-  modalname: {
-    fontWeight: "600", // Semibold
-    marginBottom: 20, // Increased space
-    fontSize: 22, // Slightly smaller
-    color: "#343a40", // Darker text
-  },
-  modalprefercontainer: {
-    flexDirection: "row",
-    justifyContent: "space-around", // Distribute space
-    width: "100%", // Take full width of modal content
-    marginVertical: 20, // Add vertical margin
-  },
-  modalbtn: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 20, // More rounded
-    borderWidth: 1,
-    borderColor: "transparent", // Default no border
-    alignItems: "center",
-    justifyContent: "center",
-    minWidth: 100, // Minimum width
-    elevation: 2,
-  },
-  expenseButton: {
-    backgroundColor: "#ffebee", // Light red background
-    borderColor: "#e57373", // Red border
-  },
-  incomeButton: {
-    backgroundColor: "#e8f5e9", // Light green background
-    borderColor: "#81c784", // Green border
-  },
-  modalButtonSelected: {
-    borderWidth: 3, // Thicker border when selected
-    elevation: 10, // More shadow when selected
-  },
-  modalButtonText: {
-    fontSize: 16,
-    fontWeight: "500", // Medium weight
-    color: "#495057",
-  },
-  modalActionButtons: {
-    flexDirection: "row",
-    justifyContent: "space-between", // Space out buttons
-    width: "80%", // Control width
-    marginTop: 25, // Add space above buttons
-  },
-  modaldone: {
-    padding: 8, // Add padding for touch area
-    borderRadius: 50, // Circular background
-    // backgroundColor: '#e9ecef', // Light background for buttons
-  },
-  modalCloseButton: {
-    // Specific style if needed
-  },
-  modalConfirmButton: {
-    // Specific style if needed
   },
   // Bottom Buttons Styling
   bottomButtonContainer: {
