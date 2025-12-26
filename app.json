@@ -20,7 +20,8 @@
       },
       "edgeToEdgeEnabled": true,
       "softwareKeyboardLayoutMode": "pan",
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.newArch.ecomoney"
     },
     "web": {
       "output": "static",
