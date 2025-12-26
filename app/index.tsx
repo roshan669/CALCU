@@ -40,8 +40,8 @@ export default function Index() {
     (bottomSheetModalRef as any).current?.present();
   }, []);
 
-  // const todaysDate = new Date().toDateString().slice(4);
-  const todaysDate = new Date(2025, 1, 2).toDateString().slice(4);
+  const todaysDate = new Date().toDateString().slice(4);
+  // const todaysDate = new Date(2025, 1, 2).toDateString().slice(4);
 
   // --- Calculation Logic ---
   const calculate = () => {

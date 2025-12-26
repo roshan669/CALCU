@@ -52,7 +52,9 @@ export default function Alert({ title, description }: AlertProps) {
           <Text style={styles.warningText}>{title}</Text>
           <Text style={styles.warningSubText}>
             {description}
-            &quot;{itemToDelete}&quot;?
+            {showWarning === "delete" && itemToDelete
+              ? `"${itemToDelete}"?`
+              : ""}
           </Text>
           <View style={styles.warningButtons}>
             <TouchableOpacity

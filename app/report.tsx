@@ -465,6 +465,30 @@ export default function Report() {
 
   return (
     <View style={styles.container}>
+      {/* Month Selection Header */}
+      <View style={styles.monthsHeader}>
+        {allMonths.length > 0 ? (
+          <FlatList
+            horizontal={true}
+            data={allMonths}
+            renderItem={renderMonthItem}
+            keyExtractor={(item) => `month-${item}`}
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.monthsListContainer}
+          />
+        ) : (
+          <Text style={styles.noMonthsText}>No historical data found</Text>
+        )}
+      </View>
+
+      {/* Table Area */}
+      <ScrollView
+        style={styles.tableScrollView}
+        contentContainerStyle={{ flexGrow: 1 }}
+      >
+        {renderTableContent()}
+      </ScrollView>
+
       {/* Action Buttons Footer */}
       <View style={styles.actionButtonsContainer}>
         <TouchableOpacity
@@ -509,33 +533,6 @@ export default function Report() {
           </Text>
         </TouchableOpacity>
       </View>
-
-      {/* Report Title */}
-      {/* <Text style={styles.reportTitleStyle}>{selectedMonthTitle}</Text> */}
-
-      {/* Table Area */}
-      <ScrollView
-        style={styles.tableScrollView}
-        contentContainerStyle={{ flexGrow: 1 }}
-      >
-        {renderTableContent()}
-      </ScrollView>
-
-      {/* Month Selection Header */}
-      <View style={styles.monthsHeader}>
-        {allMonths.length > 0 ? (
-          <FlatList
-            horizontal={true}
-            data={allMonths}
-            renderItem={renderMonthItem}
-            keyExtractor={(item) => `month-${item}`}
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.monthsListContainer}
-          />
-        ) : (
-          <Text style={styles.noMonthsText}>No historical data found</Text>
-        )}
-      </View>
     </View>
   );
 }
@@ -576,7 +573,7 @@ const styles = StyleSheet.create({
   monthButtonSelected: {
     backgroundColor: "#212529",
     borderColor: "#000",
-    transform: "scale(1.1)",
+    transform: [{ scale: 1.1 }],
   },
   monthButtonText: {
     color: "#ffffff",

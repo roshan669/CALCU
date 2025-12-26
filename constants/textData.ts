@@ -7,5 +7,5 @@ export const title = {
 
 export const description = {
     SAVE: `Saving will overwrite existing data for ${today}. Do you want to proceed?`,
-    DELETE: `Do you want to delete the Item `
+    DELETE: `Do you want to delete the Item`
 }
