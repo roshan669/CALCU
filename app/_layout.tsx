@@ -1,4 +1,5 @@
 import { Colors } from "@/constants/theme";
+import { HomeProvider } from "@/hooks/useHome";
 import { Ionicons } from "@expo/vector-icons";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { Tabs } from "expo-router";
@@ -56,12 +57,17 @@ function Layout() {
 
 export default function App() {
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView>
       <BottomSheetModalProvider>
-        <StatusBar style="inverted" />
-        <SafeAreaView style={{ flex: 1 }}>
-          <Layout />
-        </SafeAreaView>
+        <HomeProvider>
+          <StatusBar style="inverted" />
+          <SafeAreaView
+            edges={["top"]}
+            style={{ flex: 1, backgroundColor: Colors.light.background }}
+          >
+            <Layout />
+          </SafeAreaView>
+        </HomeProvider>
       </BottomSheetModalProvider>
     </GestureHandlerRootView>
   );

@@ -6,28 +6,25 @@ import {
   ToastAndroid,
   StyleSheet,
 } from "react-native";
-import React, { SetStateAction } from "react";
+import React, { SetStateAction, useContext } from "react";
 import { ReportData } from "@/types/types";
 import { BlurView } from "expo-blur";
 import { Ionicons } from "@expo/vector-icons";
+import { HomeContext } from "@/hooks/useHome";
 
 interface AlertProps {
-  setShowWarning: React.Dispatch<SetStateAction<string | null>>;
-  setAgree: React.Dispatch<SetStateAction<boolean>>;
-  setDataToUpdate?: React.Dispatch<SetStateAction<ReportData | null>>;
-  showWarning: string | null;
   title: string;
   description: string;
 }
 
-export default function Alert({
-  setShowWarning,
-  setAgree,
-  setDataToUpdate,
-  showWarning,
-  title,
-  description,
-}: AlertProps) {
+export default function Alert({ title, description }: AlertProps) {
+  const {
+    itemToDelete,
+    setShowWarning,
+    setAgree,
+    setDataToUpdate,
+    showWarning,
+  } = useContext(HomeContext);
   return (
     <Modal
       animationType="fade"
@@ -53,7 +50,10 @@ export default function Alert({
             style={{ marginBottom: 10 }}
           />
           <Text style={styles.warningText}>{title}</Text>
-          <Text style={styles.warningSubText}>{description}</Text>
+          <Text style={styles.warningSubText}>
+            {description}
+            &quot;{itemToDelete}&quot;?
+          </Text>
           <View style={styles.warningButtons}>
             <TouchableOpacity
               style={styles.warningNoButton} // "No" on the left
