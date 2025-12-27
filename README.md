@@ -1,4 +1,4 @@
-# CALCU -> Small Business Financial Tracker
+# Ecomoney -> Small Business Financial Tracker
 <img src="https://github.com/user-attachments/assets/01ce197e-a9c1-40dd-8d60-ec1868847e26" height="100" width="100" ><br>
 ## [⬇️ Download](https://github.com/roshan669/CALCU/releases/download/calcu/app-release.apk)
 
