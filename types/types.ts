@@ -17,3 +17,16 @@ export type list = {
     name: string;
     value: number;
 };
+
+export interface ReportItem {
+    name: string;
+    value: number | string;
+}
+export interface ReportDataEntry {
+    todaysDate: string;
+    totalGrossIncome: string;
+    calculatedNetIncome: string;
+    month: string;
+    all: ReportItem[];
+    time: string;
+}

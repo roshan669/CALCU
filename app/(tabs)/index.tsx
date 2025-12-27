@@ -176,7 +176,7 @@ export default function Index() {
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       keyboardVerticalOffset={100}
-      style={{ flex: 1 }}
+      style={{ flex: 1, backgroundColor: "#fff" }}
     >
       <View style={styles.container}>
         <View style={styles.resultcontainer}>
@@ -221,7 +221,7 @@ export default function Index() {
 
                 <TextInput
                   ref={(ref) => {
-                    inputRefs.current[index] = ref;
+                    inputRefs.current[index] = ref as any;
                   }}
                   placeholder="0"
                   style={[

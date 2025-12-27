@@ -203,9 +203,7 @@ export const styles = StyleSheet.create({
   // Bottom Buttons Styling
   bottomButtonContainer: {
     gap: 20,
-    flexDirection: "row",
-    // width: "95%",
-    // marginVertical: 20, // Add some space above the split buttons
+    flexDirection: "row", // Add some space above the split buttons
   },
   button: {
     // Shared button styles

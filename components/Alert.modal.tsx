@@ -11,6 +11,7 @@ import { ReportData } from "@/types/types";
 import { BlurView } from "expo-blur";
 import { Ionicons } from "@expo/vector-icons";
 import { HomeContext } from "@/hooks/useHome";
+import { Colors } from "@/constants/theme";
 
 interface AlertProps {
   title: string;
@@ -121,14 +122,14 @@ const styles = StyleSheet.create({
     width: "100%", // Use full width
   },
   warningYesButton: {
-    backgroundColor: "#28a745", // Green
+    backgroundColor: Colors.dark.seconday, // Green
     paddingVertical: 12,
     paddingHorizontal: 30,
     borderRadius: 8,
     elevation: 2,
   },
   warningNoButton: {
-    backgroundColor: "#dc3545", // Red
+    backgroundColor: Colors.dark.primary, // Red
     paddingVertical: 12,
     paddingHorizontal: 30,
     borderRadius: 8,

@@ -6,7 +6,7 @@ import {
   ToastAndroid,
   TouchableOpacity,
   FlatList,
-  Platform,
+  Alert,
 } from "react-native";
 import React, {
   useState,
@@ -17,32 +17,22 @@ import React, {
 } from "react";
 import { Table, Row, Rows } from "react-native-table-component";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import * as Print from "expo-print";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
-import * as Sharing from "expo-sharing";
-import * as FileSystem from "expo-file-system/legacy";
-
-// Interfaces
-interface ReportItem {
-  name: string;
-  value: number | string;
-}
-interface ReportDataEntry {
-  todaysDate: string;
-  totalGrossIncome: string;
-  calculatedNetIncome: string;
-  month: string;
-  all: ReportItem[];
-  time: string;
-}
+import type { ReportDataEntry } from "@/types/types";
+import Menu from "@/components/Menu.modal";
 
 export default function Report() {
   const [reportData, setReportData] = useState<ReportDataEntry[]>([]);
   const [allMonths, setAllMonths] = useState<string[]>([]);
   const [selectedMonthTitle, setSelectedMonthTitle] =
     useState<string>("Select Month");
+  const selectedMonthTitleRef = useRef(selectedMonthTitle);
   const isMounted = useRef(true);
+
+  useEffect(() => {
+    selectedMonthTitleRef.current = selectedMonthTitle;
+  }, [selectedMonthTitle]);
 
   // --- AsyncStorage Interaction ---
   const getAllMonthKeys = useCallback(async (): Promise<string[]> => {
@@ -71,8 +61,10 @@ export default function Report() {
 
   const checkAndClearOldData = useCallback(
     async (monthKey: string) => {
-      // ... (implementation remains the same) ...
-      const NINETY_DAYS_MS = 365 * 24 * 60 * 60 * 1000;
+      const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
+      const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+      const WARNING_THRESHOLD_MS = ONE_YEAR_MS - SEVEN_DAYS_MS;
+
       try {
         const storedData = await AsyncStorage.getItem(monthKey);
         if (storedData) {
@@ -86,14 +78,13 @@ export default function Report() {
               return;
             }
             const currentDate = new Date();
-            if (
-              currentDate.getTime() - firstReportDate.getTime() >=
-              NINETY_DAYS_MS
-            ) {
+            const age = currentDate.getTime() - firstReportDate.getTime();
+
+            if (age >= ONE_YEAR_MS) {
               await AsyncStorage.removeItem(monthKey);
               if (isMounted.current) {
                 ToastAndroid.show(
-                  `Cleared data older than 90 days for ${monthKey}.`,
+                  `Cleared data older than 1 year for ${monthKey}.`,
                   ToastAndroid.LONG
                 );
                 const updatedMonths = await getAllMonthKeys();
@@ -102,6 +93,14 @@ export default function Report() {
                   setReportData([]);
                   setSelectedMonthTitle("Select Month");
                 }
+              }
+            } else if (age >= WARNING_THRESHOLD_MS) {
+              if (isMounted.current) {
+                Alert.alert(
+                  "Data Expiration Warning",
+                  `The data for ${monthKey} is almost 1 year old and will be deleted soon. Please save or export it.`,
+                  [{ text: "OK" }]
+                );
               }
             }
           }
@@ -171,10 +170,18 @@ export default function Report() {
         setAllMonths(keys);
 
         if (keys.length > 0) {
-          const latestMonth = keys[keys.length - 1];
-          loadReportData(latestMonth);
+          let monthToLoad = keys[keys.length - 1];
+          const currentSelection = selectedMonthTitleRef.current;
+          if (
+            currentSelection &&
+            keys.includes(currentSelection) &&
+            currentSelection !== "Select Month"
+          ) {
+            monthToLoad = currentSelection;
+          }
+          loadReportData(monthToLoad);
         } else {
-          setSelectedMonthTitle("No Data Found");
+          setSelectedMonthTitle("Select Month");
           setReportData([]);
         }
       };
@@ -309,90 +316,6 @@ export default function Report() {
     return html;
   }, [tableHead, tableData, tableFoot, reportData, selectedMonthTitle]); // Removed columnWidthArr dependency
 
-  const printReport = async () => {
-    if (reportData.length === 0) {
-      ToastAndroid.show(
-        "No data to print for the selected month",
-        ToastAndroid.SHORT
-      );
-      return;
-    }
-    const html = generateHTML();
-    try {
-      const { uri } = await Print.printToFileAsync({
-        html,
-      });
-
-      const fileName = `Ecomoney_Report_${selectedMonthTitle.replace(
-        / /g,
-        "_"
-      )}.pdf`;
-      const newUri = FileSystem.documentDirectory + fileName;
-
-      await FileSystem.moveAsync({
-        from: uri,
-        to: newUri,
-      });
-
-      await Sharing.shareAsync(newUri, {
-        mimeType: "application/pdf",
-        dialogTitle: `Share Report for ${selectedMonthTitle}`,
-        UTI: "com.adobe.pdf",
-      });
-    } catch (error) {
-      console.error("(Report.js) Error printing report:", error);
-      ToastAndroid.show("Failed to print report", ToastAndroid.SHORT);
-    }
-  };
-
-  const saveReportToDocuments = async () => {
-    if (reportData.length === 0) {
-      ToastAndroid.show(
-        "No data to save for the selected month",
-        ToastAndroid.SHORT
-      );
-      return;
-    }
-
-    if (Platform.OS === "android") {
-      try {
-        const permissions =
-          await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
-        if (permissions.granted) {
-          const html = generateHTML();
-          const { uri } = await Print.printToFileAsync({ html });
-          const base64 = await FileSystem.readAsStringAsync(uri, {
-            encoding: FileSystem.EncodingType.Base64,
-          });
-          const fileName = `Ecomoney_Report_${selectedMonthTitle.replace(
-            / /g,
-            "_"
-          )}.pdf`;
-          const mimeType = "application/pdf";
-
-          const newFileUri =
-            await FileSystem.StorageAccessFramework.createFileAsync(
-              permissions.directoryUri,
-              fileName,
-              mimeType
-            );
-          await FileSystem.writeAsStringAsync(newFileUri, base64, {
-            encoding: FileSystem.EncodingType.Base64,
-          });
-          ToastAndroid.show("Report saved successfully", ToastAndroid.SHORT);
-        } else {
-          ToastAndroid.show("Permission denied", ToastAndroid.SHORT);
-        }
-      } catch (error) {
-        console.error("(Report.js) Error saving report:", error);
-        ToastAndroid.show("Error saving report", ToastAndroid.SHORT);
-      }
-    } else {
-      // For iOS, shareAsync is the standard way to save to files
-      printReport();
-    }
-  };
-
   const handleMonthPress = useCallback(
     (month: string) => {
       loadReportData(month);
@@ -424,8 +347,7 @@ export default function Report() {
   const renderTableContent = () =>
     reportData.length > 0 ? (
       <ScrollView
-        showsVerticalScrollIndicator
-        showsHorizontalScrollIndicator
+        showsHorizontalScrollIndicator={true}
         horizontal={true}
         contentContainerStyle={styles.tableOuterContainer}
       >
@@ -467,20 +389,27 @@ export default function Report() {
 
   return (
     <View style={styles.container}>
-      {/* Month Selection Header */}
-      <View style={styles.monthsHeader}>
-        {allMonths.length > 0 ? (
-          <FlatList
-            horizontal={true}
-            data={allMonths}
-            renderItem={renderMonthItem}
-            keyExtractor={(item) => `month-${item}`}
-            // showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.monthsListContainer}
-          />
-        ) : (
-          <Text style={styles.noMonthsText}>No historical data found</Text>
-        )}
+      <View style={styles.headerContainer}>
+        {/* Month Selection Header */}
+        <View style={styles.monthsHeader}>
+          {allMonths.length > 0 ? (
+            <FlatList
+              horizontal={true}
+              data={allMonths}
+              renderItem={renderMonthItem}
+              keyExtractor={(item) => `month-${item}`}
+              // showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.monthsListContainer}
+            />
+          ) : (
+            <Text style={styles.noMonthsText}>No historical data found</Text>
+          )}
+        </View>
+        <Menu
+          generateHTML={generateHTML}
+          reportData={reportData}
+          selectedMonthTitle={selectedMonthTitle}
+        />
       </View>
 
       {/* Table Area */}
@@ -490,51 +419,6 @@ export default function Report() {
       >
         {renderTableContent()}
       </ScrollView>
-
-      {/* Action Buttons Footer */}
-      <View style={styles.actionButtonsContainer}>
-        <TouchableOpacity
-          style={styles.printButton}
-          onPress={printReport}
-          disabled={reportData.length === 0}
-        >
-          <Ionicons
-            name="share-social-outline"
-            size={20}
-            color={reportData.length === 0 ? "#adb5bd" : "white"}
-            style={{ marginRight: 8 }}
-          />
-          <Text
-            style={[
-              styles.printButtonText,
-              reportData.length === 0 && styles.printButtonDisabledText,
-            ]}
-          >
-            Share
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.saveButton}
-          onPress={saveReportToDocuments}
-          disabled={reportData.length === 0}
-        >
-          <Ionicons
-            name="save-outline"
-            size={20}
-            color={reportData.length === 0 ? "#adb5bd" : "white"}
-            style={{ marginRight: 8 }}
-          />
-          <Text
-            style={[
-              styles.printButtonText,
-              reportData.length === 0 && styles.printButtonDisabledText,
-            ]}
-          >
-            Save To File
-          </Text>
-        </TouchableOpacity>
-      </View>
     </View>
   );
 }
@@ -545,17 +429,21 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   // Header
+  headerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    elevation: 2,
+    height: 65,
+    paddingRight: 5,
+  },
   monthsHeader: {
-    height: 60,
-    width: "100%",
+    flex: 1,
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 5,
-    backgroundColor: "#fff",
-    elevation: 1,
   },
   monthsListContainer: {
-    paddingBottom: 10,
     paddingHorizontal: 5,
     alignItems: "center",
   },
@@ -569,7 +457,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.3)",
-    minHeight: 40,
+    minHeight: 35,
   },
   monthButtonSelected: {
     backgroundColor: "#212529",
@@ -672,7 +560,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderRadius: 8,
     marginHorizontal: 5,
-    marginVertical: 10,
+    // marginVertical: 10,
   },
   printButton: {
     backgroundColor: "#6c757d",

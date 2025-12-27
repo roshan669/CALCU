@@ -38,7 +38,7 @@ export default function App() {
           <StatusBar style="inverted" />
           <SafeAreaView
             edges={["top"]}
-            style={{ flex: 1, backgroundColor: Colors.light.background }}
+            style={{ flex: 1, backgroundColor: "#fff" }}
           >
             <Layout />
           </SafeAreaView>

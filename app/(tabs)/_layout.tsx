@@ -1,6 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
-import React from "react";
 
 export default function TabLayout() {
   const datestr = new Date().toDateString().slice(4, 15);
@@ -8,7 +7,7 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: "#000",
-        animation: "shift",
+        animation: "fade",
       }}
     >
       <Tabs.Screen
@@ -26,13 +25,15 @@ export default function TabLayout() {
               size={24}
             />
           ),
+          headerStyle: { elevation: 1 },
+          headerTitleContainerStyle: { elevation: 0, borderWidth: 0 },
         }}
       />
 
       <Tabs.Screen
         name="report"
         options={{
-          // animation: "none",
+          //   animation: "shift",
           headerTitleAlign: "center",
           title: "Report",
           headerShown: false,
