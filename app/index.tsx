@@ -1,4 +1,4 @@
-import { useCallback, useContext } from "react";
+import { useCallback, useContext, useRef } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
@@ -34,9 +34,11 @@ export default function Index() {
     setTotalGrossIncome,
     showWarning,
     bottomSheetModalRef,
+    inputRefs,
   } = useContext(HomeContext)!;
 
   const handlePresentModalPress = useCallback(() => {
+    inputRefs.current.forEach((input) => input?.blur());
     (bottomSheetModalRef as any).current?.present();
   }, []);
 
@@ -218,6 +220,9 @@ export default function Index() {
                 </Text>
 
                 <TextInput
+                  ref={(ref) => {
+                    inputRefs.current[index] = ref;
+                  }}
                   placeholder="0"
                   style={[
                     styles.input,
@@ -225,13 +230,23 @@ export default function Index() {
                       ? styles.expenseInput
                       : styles.incomeInput,
                   ]}
-                  // Use toString() to display the value, handle 0 correctly
-                  value={currentValue === 0 ? "" : currentValue.toString()} // Show empty for 0
+                  defaultValue={
+                    currentValue === 0 ? "" : currentValue.toString()
+                  }
                   onChangeText={(text) =>
                     handleChange(text, item.toggle, item.name)
                   }
+                  onSubmitEditing={() => {
+                    const nextIndex = index + 1;
+                    if (nextIndex < allinputs.length) {
+                      inputRefs.current[nextIndex]?.focus();
+                    }
+                  }}
                   keyboardType="numeric"
                   placeholderTextColor="#999"
+                  returnKeyType={
+                    index === allinputs.length - 1 ? "done" : "next"
+                  }
                 />
 
                 <TouchableOpacity
@@ -256,10 +271,12 @@ export default function Index() {
               <Ionicons
                 name="add-circle"
                 size={50}
-                color={"rgba(0, 128, 0, 0.5)"} // Make it more visible
+                color={"#6c757d"} // Make it more visible
               />
               {allinputs.length < 1 && (
-                <Text style={{ fontSize: 20, fontWeight: "bold" }}>
+                <Text
+                  style={{ color: "#6c757d", fontSize: 20, fontWeight: "bold" }}
+                >
                   Add expense or income
                 </Text>
               )}

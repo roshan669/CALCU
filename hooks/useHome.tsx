@@ -1,8 +1,15 @@
 import { input, list, ReportData } from "@/types/types";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import React, { createContext, useCallback, useMemo, useState } from "react";
+import React, {
+  createContext,
+  useCallback,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { ToastAndroid } from "react-native";
+import { TextInput } from "react-native-gesture-handler";
 
 interface HomeContextType {
   netIncome: string;
@@ -29,6 +36,7 @@ interface HomeContextType {
   addName: string;
   bottomSheetModalRef: React.Ref<any>;
   handleAdd: () => void;
+  inputRefs: React.RefObject<(TextInput | null)[]>;
 }
 
 const HomeContext = createContext<HomeContextType>({
@@ -80,6 +88,7 @@ const HomeContext = createContext<HomeContextType>({
   handleAdd: () => {
     console.log("wrap the layot with useHome provider");
   },
+  inputRefs: { current: [] },
 });
 
 const HomeProvider = ({ children }: { children: React.ReactNode }) => {
@@ -96,7 +105,7 @@ const HomeProvider = ({ children }: { children: React.ReactNode }) => {
   const [itemToDelete, setItemToDelete] = useState<string>("");
 
   const bottomSheetModalRef = React.useRef<BottomSheetModal>(null);
-
+  const inputRefs = useRef<(TextInput | null)[]>([]);
   const loadPreferences = useCallback(async () => {
     try {
       const storedData = await AsyncStorage.getItem("perfer");
@@ -250,6 +259,7 @@ const HomeProvider = ({ children }: { children: React.ReactNode }) => {
 
   const contextValue = useMemo(
     () => ({
+      inputRefs,
       handleAdd,
       bottomSheetModalRef,
       itemToDelete,
@@ -276,6 +286,7 @@ const HomeProvider = ({ children }: { children: React.ReactNode }) => {
       showWarning,
     }),
     [
+      inputRefs,
       handleAdd,
       itemToDelete,
       dataToUpdate,

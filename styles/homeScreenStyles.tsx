@@ -227,7 +227,7 @@ export const styles = StyleSheet.create({
     flex: 1, // Take half the space
   },
   insertButton: {
-    backgroundColor: "#28a745", // Success/Green color
+    backgroundColor: "#212529", // Success/Green color
     flex: 1, // Take half the space
   },
   reportButton: {

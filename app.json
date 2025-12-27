@@ -4,7 +4,7 @@
     "slug": "Ecomoney",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/adaptive-icon.png",
+    "icon": "./assets/images/android-icon-background.png",
     "scheme": "ecomoney",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -32,7 +32,7 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
+          "image": "./assets/images/adaptive-icon.png",
           "imageWidth": 150,
           "resizeMode": "native",
           "backgroundColor": "#ffffff",

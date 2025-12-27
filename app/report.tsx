@@ -424,6 +424,8 @@ export default function Report() {
   const renderTableContent = () =>
     reportData.length > 0 ? (
       <ScrollView
+        showsVerticalScrollIndicator
+        showsHorizontalScrollIndicator
         horizontal={true}
         contentContainerStyle={styles.tableOuterContainer}
       >
@@ -473,7 +475,7 @@ export default function Report() {
             data={allMonths}
             renderItem={renderMonthItem}
             keyExtractor={(item) => `month-${item}`}
-            showsHorizontalScrollIndicator={false}
+            // showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.monthsListContainer}
           />
         ) : (
@@ -668,10 +670,12 @@ const styles = StyleSheet.create({
     justifyContent: "space-around",
     padding: 10,
     backgroundColor: "#f8f9fa",
+    gap: 20,
+    // width: "95%",
   },
   printButton: {
     flexDirection: "row",
-    backgroundColor: "#007bff",
+    backgroundColor: "#6c757d",
     paddingVertical: 12,
     paddingHorizontal: 20,
     justifyContent: "center",
@@ -682,7 +686,7 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     flexDirection: "row",
-    backgroundColor: "#28a745",
+    backgroundColor: "#212529",
     paddingVertical: 12,
     paddingHorizontal: 20,
     justifyContent: "center",

@@ -13,7 +13,7 @@ function Layout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors.dark.tint,
+        tabBarActiveTintColor: "#000",
         animation: "shift",
       }}
     >
