@@ -531,7 +531,7 @@ export default function Report() {
               reportData.length === 0 && styles.printButtonDisabledText,
             ]}
           >
-            Save to Files
+            Save To File
           </Text>
         </TouchableOpacity>
       </View>
@@ -543,17 +543,16 @@ export default function Report() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f8f9fa",
   },
   // Header
   monthsHeader: {
     height: 60,
-    // backgroundColor: "#007bff",
     width: "100%",
     justifyContent: "center",
     alignItems: "center",
-    // elevation: 4,
     paddingHorizontal: 5,
+    backgroundColor: "#fff",
+    elevation: 1,
   },
   monthsListContainer: {
     paddingBottom: 10,
@@ -588,8 +587,9 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   noMonthsText: {
-    color: "#e0e0e0",
+    color: "#495057",
     fontSize: 16,
+    fontWeight: "bold",
   },
   // Title
   reportTitleStyle: {
@@ -667,33 +667,32 @@ const styles = StyleSheet.create({
   // Print Button
   actionButtonsContainer: {
     flexDirection: "row",
-    justifyContent: "space-around",
-    padding: 10,
-    backgroundColor: "#f8f9fa",
-    gap: 20,
-    // width: "95%",
+    paddingVertical: 12,
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 8,
+    marginHorizontal: 5,
+    marginVertical: 10,
   },
   printButton: {
-    flexDirection: "row",
     backgroundColor: "#6c757d",
+    flex: 1,
+    flexDirection: "row",
     paddingVertical: 12,
-    paddingHorizontal: 20,
     justifyContent: "center",
     alignItems: "center",
     borderRadius: 8,
-    flex: 1,
-    marginRight: 5,
+    marginHorizontal: 5,
   },
   saveButton: {
-    flexDirection: "row",
     backgroundColor: "#212529",
+    flex: 1,
+    flexDirection: "row",
     paddingVertical: 12,
-    paddingHorizontal: 20,
     justifyContent: "center",
     alignItems: "center",
     borderRadius: 8,
-    flex: 1,
-    marginLeft: 5,
+    marginHorizontal: 5,
   },
   printButtonText: {
     color: "white",

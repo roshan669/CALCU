@@ -320,7 +320,7 @@ export default function Index() {
               color="#fff"
               style={{ marginRight: 5 }}
             />
-            <Text style={styles.buttonText}>Save Today</Text>
+            <Text style={styles.buttonText}>Save</Text>
           </TouchableOpacity>
         </View>
       </View>

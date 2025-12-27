@@ -79,7 +79,7 @@ export const styles = StyleSheet.create({
   },
   addButtonContainer: {
     marginTop: 10, // Space above the add button
-    marginBottom: 20, // Space below the add button
+    // marginBottom: 20, // Space below the add button
   },
   addrmvbtn: {
     justifyContent: "center",
@@ -204,22 +204,16 @@ export const styles = StyleSheet.create({
   bottomButtonContainer: {
     gap: 20,
     flexDirection: "row",
-    width: "95%",
+    // width: "95%",
     // marginVertical: 20, // Add some space above the split buttons
   },
   button: {
     // Shared button styles
     flexDirection: "row",
     paddingVertical: 12,
-    paddingHorizontal: 20,
     justifyContent: "center",
     alignItems: "center",
     borderRadius: 8,
-    // elevation: 3,
-    // shadowColor: "#000",
-    // shadowOffset: { width: 0, height: 1 },
-    // shadowOpacity: 0.22,
-    // shadowRadius: 2.22,
     marginHorizontal: 5, // Add horizontal margin between side-by-side buttons
   },
   calculateButton: {

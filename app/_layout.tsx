@@ -1,57 +1,32 @@
 import { Colors } from "@/constants/theme";
 import { HomeProvider } from "@/hooks/useHome";
-import { Ionicons } from "@expo/vector-icons";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
-import { Tabs } from "expo-router";
+import { Stack, useRouter } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useEffect, useState } from "react";
 
 import { StatusBar } from "expo-status-bar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 function Layout() {
-  const datestr = new Date().toDateString().slice(4, 15);
-  return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: "#000",
-        animation: "shift",
-      }}
-    >
-      <Tabs.Screen
-        name="index"
-        options={{
-          headerTitleAlign: "center",
-          title: "Home",
-          headerTitle: "Today: " + datestr,
-          headerTitleStyle: { fontSize: 24, fontWeight: "bold" },
-          headerStatusBarHeight: 0,
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons
-              name={focused ? "home-sharp" : "home-outline"}
-              color={color}
-              size={24}
-            />
-          ),
-        }}
-      />
+  const router = useRouter();
+  const [isReady, setIsReady] = useState(false);
 
-      <Tabs.Screen
-        name="report"
-        options={{
-          // animation: "none",
-          headerTitleAlign: "center",
-          title: "Report",
-          headerShown: false,
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons
-              name={focused ? "calendar-sharp" : "calendar-outline"}
-              color={color}
-              size={24}
-            />
-          ),
-        }}
-      />
-    </Tabs>
+  useEffect(() => {
+    AsyncStorage.getItem("hasLaunched").then((value) => {
+      if (value === null) {
+        router.replace("/onboarding");
+      }
+      setIsReady(true);
+    });
+  }, []);
+
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+    </Stack>
   );
 }
 
